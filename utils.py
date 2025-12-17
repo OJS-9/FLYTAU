@@ -90,3 +90,28 @@ def create_customer_with_phones(
             "INSERT INTO Costumer_Phone (Phone, Costumer_Mail) VALUES (%s, %s)",
             phone_rows,
         )
+
+
+def guest_sign_in(email: str) -> None:
+    """
+    Ensure a guest with the given email exists in the Guest table.
+
+    Flow:
+    - If the email already exists in Guest -> do nothing.
+    - If it does not exist -> insert a new row with this email.
+
+    Assumes a table similar to:
+        Guest(Mail VARCHAR PRIMARY KEY, Signup_date DATE, ...)
+    """
+    with get_db_connection() as cursor:
+        # Check if guest already exists
+        cursor.execute("SELECT Mail FROM Guest WHERE Mail = %s", (email,))
+        if cursor.fetchone():
+            return
+
+        # Insert new guest
+        cursor.execute(
+            "INSERT INTO Guest (Mail) VALUES (%s)",
+            (email,),
+        )
+

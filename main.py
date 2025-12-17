@@ -6,6 +6,7 @@ from utils import (
     get_manager_by_id_and_password,
     customer_email_exists,
     create_customer_with_phones,
+    guest_sign_in,
 )
 
 app = Flask(__name__)
@@ -185,6 +186,42 @@ def signup():
             )
 
 
+@app.route("/guest_sign_in", methods=["POST"])
+def guest_sign_in_route():
+    """
+    Guest login / signup using email only.
+
+    Flow:
+    - Get email from form.
+    - If invalid -> show error on guest page.
+    - Call guest_sign_in(email) which:
+        * checks if email exists in Guest table
+        * inserts if it doesn't exist
+    - Store guest info in session and redirect to guest dashboard.
+    """
+    email = request.form.get("email", "").strip()
+
+    if not email or "@" not in email:
+        return render_template(
+            "guest.html",
+            error="Please enter a valid email address.",
+            last_email=email,
+        )
+
+    try:
+        guest_sign_in(email)
+        session.clear()
+        session["user_type"] = "guest"
+        session["guest_email"] = email
+        return redirect("/guest_dashboard")
+    except Exception:
+        return render_template(
+            "guest.html",
+            error="An unexpected error occurred while signing in as guest. Please try again.",
+            last_email=email,
+        )
+
+
 @app.route("/user_dashboard")
 def user_dashboard():
     if session.get("user_type") != "customer":
@@ -204,6 +241,20 @@ def admin_dashboard():
         "admin_dashboard.html",
         user_name=session.get("user_name"),
         user_id=session.get("user_id"),
+    )
+
+
+@app.route("/guest_dashboard")
+def guest_dashboard():
+    """
+    Simple guest dashboard after email-only sign-in.
+    Uses the same guest.html template but passes the guest email.
+    """
+    if session.get("user_type") != "guest":
+        return redirect("/")
+    return render_template(
+        "guest.html",
+        guest_email=session.get("guest_email"),
     )
 
 
