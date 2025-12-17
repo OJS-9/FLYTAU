@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Admin Dashboard - FLYTAU</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <main class="container">
+      <section class="card mt-xl m-auto">
+        <div class="card-header">
+          <h1 class="card-title">Welcome, {{ user_name or 'Manager' }}!</h1>
+          <p class="text-muted">
+            You are logged in as a manager (Employee ID: {{ user_id }}).
+          </p>
+        </div>
+
+        <div class="card-body">
+          <p class="text-muted">
+            This is your admin dashboard. From here you will later be able to add flights,
+            manage flights, and view management reports.
+          </p>
+
+          <div class="btn-group mt-md">
+            <a href="{{ url_for('home') }}" class="btn btn-secondary">Back to Home</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-danger">Log Out</a>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
+
+

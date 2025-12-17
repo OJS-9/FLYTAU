@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>FLYTAU - Home</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <h1>FLYTAU</h1>
+    {% if error %}
+      <p style="color:red">{{ error }}</p>
+    {% endif %}
+    <form action="/" method="post">
+      <button type="submit" name="login_type" value="login">Log In</button>
+      <button type="submit" name="login_type" value="signup">Sign Up</button>
+      <button type="submit" name="login_type" value="guest">Log In as Guest</button>
+    </form>
+  </body>
+</html>
