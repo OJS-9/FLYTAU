@@ -1,19 +1,58 @@
+<!DOCTYPE html>
 <html>
   <head>
-    <title>Guest Page</title>
+    <title>Guest Sign-In - FLYTAU</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   </head>
   <body>
-    <h1>Welcome, Guest!</h1>
-    <p>You reached this page via the Guest button.</p>
-    <form action="/" method="get">
-      <table>
-        <tr>
-          <td>Email</td>
-          <td><input type="text" name="Email" placeholder="Enter your email"></td>
-        </tr>
-      </table>
-      <button type="submit">Back to home</button>
-    </form>
+    <main class="container">
+      <section class="card mt-xl m-auto" style="max-width: 480px;">
+        <div class="card-header">
+          {% if guest_email %}
+            <h1 class="card-title">Welcome, Guest!</h1>
+            <p class="text-muted">
+              You are signed in as {{ guest_email }}.
+            </p>
+          {% else %}
+            <h1 class="card-title">Guest Sign-In</h1>
+            <p class="text-muted">
+              Continue as a guest using your email only.
+            </p>
+          {% endif %}
+        </div>
+
+        <div class="card-body">
+          {% if error %}
+            <div class="alert alert-error">{{ error }}</div>
+          {% endif %}
+
+          {% if guest_email %}
+            <div class="btn-group mt-md">
+              <a href="{{ url_for('logout') }}" class="btn btn-danger">Log Out</a>
+            </div>
+          {% else %}
+            <form action="{{ url_for('guest_sign_in_route') }}" method="post">
+              <div class="form-group">
+                <label for="guest-email">Email</label>
+                <input
+                  type="email"
+                  id="guest-email"
+                  name="email"
+                  placeholder="Enter your email"
+                  value="{{ last_email or '' }}"
+                  required
+                />
+              </div>
+
+              <div class="btn-group mt-md">
+                <button type="submit" class="btn btn-primary">Continue as guest</button>
+                <a href="{{ url_for('login') }}" class="btn btn-secondary">Back to Login</a>
+              </div>
+            </form>
+          {% endif %}
+        </div>
+      </section>
+    </main>
   </body>
 </html>
 
