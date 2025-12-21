@@ -1,7 +1,7 @@
 import mysql.connector
 from contextlib import contextmanager
 import os
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List, Dict
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -114,4 +114,63 @@ def guest_sign_in(email: str) -> None:
             "INSERT INTO Guest (Mail) VALUES (%s)",
             (email,),
         )
+
+
+def search_flights(origin_airport: str, destination_airport: str, departure_date: str) -> List[Dict]:
+    """
+    Search for flights by origin airport, destination airport, and departure date.
+    
+    Parameters:
+        origin_airport: Airport code (e.g., "TLV")
+        destination_airport: Airport code
+        departure_date: Date string in format YYYY-MM-DD
+    
+    Returns:
+        List of dictionaries containing flight details:
+        - flight_id: Flight ID
+        - departure_datetime: Departure date/time
+        - arrival_datetime: Arrival date/time
+        - origin_airport: Origin airport code
+        - destination_airport: Destination airport code
+        - business_seat_price: Business class seat price
+        - economy_seat_price: Economy class seat price
+        - plane_id: Plane ID
+    """
+    with get_db_connection() as cursor:
+        cursor.execute(
+            """
+            SELECT 
+                f.ID,
+                f.Departure_DateTime,
+                f.Arrival_DateTime,
+                f.Path_Origin_Airport,
+                f.Path_Dest_Airport,
+                f.Business_Seat_Price,
+                f.Economy_Seat_Price,
+                f.Plane_ID
+            FROM Flight f
+            WHERE f.Path_Origin_Airport = %s
+              AND f.Path_Dest_Airport = %s
+              AND DATE(f.Departure_DateTime) = %s
+            ORDER BY f.Departure_DateTime ASC
+            """,
+            (origin_airport.upper(), destination_airport.upper(), departure_date),
+        )
+        
+        results = cursor.fetchall()
+        
+        flights = []
+        for row in results:
+            flights.append({
+                "flight_id": row[0],
+                "departure_datetime": row[1].strftime("%Y-%m-%d %H:%M:%S") if row[1] else None,
+                "arrival_datetime": row[2].strftime("%Y-%m-%d %H:%M:%S") if row[2] else None,
+                "origin_airport": row[3],
+                "destination_airport": row[4],
+                "business_seat_price": row[5],
+                "economy_seat_price": row[6],
+                "plane_id": row[7],
+            })
+        
+        return flights
 
