@@ -1,12 +1,13 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, jsonify
 from flask_session import Session
-from datetime import timedelta
+from datetime import timedelta, datetime
 from utils import (
     get_customer_by_email_and_password,
     get_manager_by_id_and_password,
     customer_email_exists,
     create_customer_with_phones,
     guest_sign_in,
+    search_flights,
 )
 
 app = Flask(__name__)
@@ -262,6 +263,72 @@ def guest_dashboard():
 def logout():
     session.clear()
     return redirect("/")
+
+
+@app.route("/search_flights", methods=["POST"])
+def search_flights_route():
+    """
+    Handle flight search requests via AJAX.
+    Validates user is logged in as customer, validates inputs, and returns JSON results.
+    """
+    # Check if user is logged in as customer
+    if session.get("user_type") != "customer":
+        return jsonify({"error": "You must be logged in to search flights."}), 401
+
+    # Extract and validate form data
+    origin_airport = request.form.get("origin_airport", "").strip().upper()
+    destination_airport = request.form.get("destination_airport", "").strip().upper()
+    departure_date = request.form.get("departure_date", "").strip()
+    passengers = request.form.get("passengers", "1").strip()
+
+    # Python validation
+    errors = []
+
+    if not origin_airport:
+        errors.append("Origin airport is required.")
+    elif len(origin_airport) != 3:
+        errors.append("Origin airport must be a 3-letter code.")
+
+    if not destination_airport:
+        errors.append("Destination airport is required.")
+    elif len(destination_airport) != 3:
+        errors.append("Destination airport must be a 3-letter code.")
+
+    if origin_airport and destination_airport and origin_airport == destination_airport:
+        errors.append("Origin and destination airports must be different.")
+
+    if not departure_date:
+        errors.append("Departure date is required.")
+    else:
+        try:
+            # Validate date format
+            date_obj = datetime.strptime(departure_date, "%Y-%m-%d")
+            # Check if date is not in the past
+            if date_obj.date() < datetime.now().date():
+                errors.append("Departure date cannot be in the past.")
+        except ValueError:
+            errors.append("Invalid date format. Please use YYYY-MM-DD.")
+
+    try:
+        passengers_int = int(passengers)
+        if passengers_int < 1 or passengers_int > 9:
+            errors.append("Number of passengers must be between 1 and 9.")
+    except ValueError:
+        errors.append("Number of passengers must be a valid number.")
+
+    if errors:
+        return jsonify({"error": " ".join(errors)}), 400
+
+    # Save passengers count (for future use, not used in search yet)
+    session["search_passengers"] = passengers_int
+
+    try:
+        # Call search function
+        flights = search_flights(origin_airport, destination_airport, departure_date)
+        return jsonify({"flights": flights, "count": len(flights)})
+    except Exception as e:
+        # In a real app, log the error
+        return jsonify({"error": "An error occurred while searching for flights. Please try again."}), 500
 
 
 if __name__ == "__main__":

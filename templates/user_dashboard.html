@@ -6,32 +6,147 @@
   </head>
   <body>
     <main class="container">
-      <section class="card mt-xl m-auto">
+      <!-- Navigation Bar -->
+      <nav class="flight-nav">
+        <a href="#" class="flight-nav-item active">Book A Flight</a>
+        <a href="#" class="flight-nav-item">My Booking</a>
+      </nav>
+
+      <!-- Flight Search Section -->
+      <section class="card mt-xl">
         <div class="card-header">
           <h1 class="card-title">Welcome, {{ user_name or 'Customer' }}!</h1>
           <p class="text-muted">
-            You are logged in as a registered customer.
+            Search for flights to book your next trip.
           </p>
         </div>
 
         <div class="card-body">
-          <p>
-            <strong>Email:</strong>
-            {{ user_email }}
-          </p>
+          <form id="flight-search-form" class="flight-search-form">
+            <div class="flight-search-fields">
+              <!-- Origin Airport -->
+              <div class="flight-field">
+                <label for="origin_airport">Origin</label>
+                <input 
+                  type="text" 
+                  id="origin_airport" 
+                  name="origin_airport" 
+                  placeholder="TLV" 
+                  class="airport-input"
+                  required
+                >
+              </div>
 
-          <p class="text-muted">
-            This is your user dashboard. From here you will later be able to search flights,
-            manage reservations, and view your purchase history.
-          </p>
+              <!-- Flight Path Icon -->
+              <div class="flight-path-icon">
+                <svg width="60" height="40" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M 5 20 Q 30 5, 55 20" stroke="var(--color-primary-light)" stroke-width="2" fill="none" stroke-dasharray="5,5"/>
+                  <path d="M 25 18 L 30 20 L 25 22 L 28 20 Z" fill="var(--color-primary)" transform="translate(5, 0)"/>
+                </svg>
+              </div>
 
-          <div class="btn-group mt-md">
-            <a href="{{ url_for('logout') }}" class="btn btn-danger">Log Out</a>
-          </div>
+              <!-- Destination Airport -->
+              <div class="flight-field">
+                <label for="destination_airport">Where to?</label>
+                <input 
+                  type="text" 
+                  id="destination_airport" 
+                  name="destination_airport" 
+                  placeholder="Where to?" 
+                  class="airport-input"
+                  required
+                >
+              </div>
+
+              <!-- Departure Date -->
+              <div class="flight-field">
+                <label for="departure_date">Departure</label>
+                <input 
+                  type="date" 
+                  id="departure_date" 
+                  name="departure_date" 
+                  required
+                >
+              </div>
+
+              <!-- Passenger Count -->
+              <div class="flight-field">
+                <label for="passengers">Passenger</label>
+                <div class="passenger-selector">
+                  <input 
+                    type="number" 
+                    id="passengers" 
+                    name="passengers" 
+                    value="1" 
+                    min="1" 
+                    max="9"
+                    class="passenger-input"
+                    required
+                  >
+                  <span class="seat-icon">🪑</span>
+                  <span class="dropdown-chevron">▼</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flight-search-actions">
+              <button type="submit" class="btn btn-primary">Search Flights</button>
+            </div>
+          </form>
+
+          <!-- Search Results Area -->
+          <div id="search-results" class="search-results hidden"></div>
         </div>
       </section>
     </main>
+
+    <script>
+      document.getElementById('flight-search-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const resultsDiv = document.getElementById('search-results');
+        resultsDiv.classList.remove('hidden');
+        resultsDiv.innerHTML = '<p class="text-muted">Searching...</p>';
+
+        try {
+          const response = await fetch('/search_flights', {
+            method: 'POST',
+            body: formData
+          });
+
+          const data = await response.json();
+
+          if (data.error) {
+            resultsDiv.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+          } else if (data.flights && data.flights.length > 0) {
+            let html = '<h3>Search Results</h3><div class="flight-results-list">';
+            data.flights.forEach(flight => {
+              html += `
+                <div class="flight-result-card">
+                  <div class="flight-route">
+                    <span class="airport-code-large">${flight.origin_airport}</span>
+                    <span class="flight-arrow">→</span>
+                    <span class="airport-code-large">${flight.destination_airport}</span>
+                  </div>
+                  <div class="flight-details">
+                    <p><strong>Departure:</strong> ${flight.departure_datetime}</p>
+                    <p><strong>Arrival:</strong> ${flight.arrival_datetime}</p>
+                    <p><strong>Economy:</strong> $${flight.economy_seat_price}</p>
+                    <p><strong>Business:</strong> $${flight.business_seat_price}</p>
+                  </div>
+                </div>
+              `;
+            });
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+          } else {
+            resultsDiv.innerHTML = '<p class="text-muted">No flights found for your search criteria.</p>';
+          }
+        } catch (error) {
+          resultsDiv.innerHTML = `<div class="alert alert-error">An error occurred while searching. Please try again.</div>`;
+        }
+      });
+    </script>
   </body>
 </html>
-
-

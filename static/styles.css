@@ -852,3 +852,249 @@ footer a:hover {
   }
 }
 
+/* ============================================
+   7. FLIGHT SEARCH COMPONENTS
+   ============================================ */
+
+/* Navigation Bar */
+.flight-nav {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--color-gray-200);
+  margin-bottom: var(--spacing-xl);
+  background-color: var(--color-bg-primary);
+}
+
+.flight-nav-item {
+  padding: var(--spacing-md) var(--spacing-xl);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+  transition: all var(--transition-base);
+  background-color: transparent;
+}
+
+.flight-nav-item:hover {
+  color: var(--color-primary);
+  background-color: var(--color-gray-50);
+  text-decoration: none;
+}
+
+.flight-nav-item.active {
+  color: var(--color-primary);
+  background-color: var(--color-primary-lighter);
+  border-bottom-color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Flight Search Form */
+.flight-search-form {
+  width: 100%;
+}
+
+.flight-search-fields {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-lg);
+}
+
+.flight-field {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 120px;
+}
+
+.flight-field label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xs);
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: var(--font-weight-normal);
+}
+
+.flight-field input[type="date"] {
+  border: none;
+  border-bottom: 2px solid var(--color-gray-300);
+  border-radius: 0;
+  padding: var(--spacing-sm) 0;
+  background-color: transparent;
+}
+
+.flight-field input[type="date"]:focus {
+  outline: none;
+  border-bottom-color: var(--color-primary);
+  box-shadow: none;
+}
+
+.airport-input {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  border: none;
+  border-bottom: 2px solid var(--color-gray-300);
+  border-radius: 0;
+  padding: var(--spacing-sm) 0;
+  background-color: transparent;
+  text-transform: uppercase;
+}
+
+.airport-input:focus {
+  outline: none;
+  border-bottom-color: var(--color-primary);
+  box-shadow: none;
+}
+
+.airport-input::placeholder {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-normal);
+  text-transform: none;
+}
+
+.flight-path-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0 var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.passenger-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  border-bottom: 2px solid var(--color-gray-300);
+  padding-bottom: var(--spacing-sm);
+  position: relative;
+  cursor: pointer;
+}
+
+.passenger-selector:hover {
+  border-bottom-color: var(--color-primary);
+}
+
+.passenger-input {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  border: none;
+  border-radius: 0;
+  padding: var(--spacing-sm) 0;
+  background-color: transparent;
+  width: 40px;
+  text-align: center;
+}
+
+.passenger-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.passenger-input::-webkit-inner-spin-button,
+.passenger-input::-webkit-outer-spin-button {
+  opacity: 1;
+  height: auto;
+}
+
+.seat-icon {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-muted);
+}
+
+.dropdown-chevron {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-left: auto;
+}
+
+.flight-search-actions {
+  margin-top: var(--spacing-lg);
+}
+
+/* Search Results */
+.search-results {
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-xl);
+  border-top: 1px solid var(--color-gray-200);
+}
+
+.flight-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.flight-result-card {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  transition: box-shadow var(--transition-base);
+}
+
+.flight-result-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.flight-route {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.airport-code-large {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+}
+
+.flight-arrow {
+  font-size: var(--font-size-xl);
+  color: var(--color-text-secondary);
+}
+
+.flight-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.flight-details p {
+  margin-bottom: 0;
+  font-size: var(--font-size-sm);
+}
+
+/* Responsive adjustments for flight search */
+@media (max-width: 768px) {
+  .flight-search-fields {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .flight-field {
+    min-width: 100%;
+  }
+
+  .flight-path-icon {
+    transform: rotate(90deg);
+    margin: var(--spacing-sm) 0;
+  }
+
+  .flight-route {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .flight-arrow {
+    transform: rotate(90deg);
+  }
+}
+
