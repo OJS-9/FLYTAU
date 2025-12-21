@@ -149,9 +149,21 @@ def search_flights(origin_airport: str, destination_airport: str, departure_date
                 f.Economy_Seat_Price,
                 f.Plane_ID
             FROM Flight f
+            JOIN Plane p ON f.Plane_ID = p.ID
+            LEFT JOIN (
+                SELECT 
+                    OCF.Flight_ID,
+                    COUNT(DISTINCT CONCAT(a.Class_ID, '-', a.Plane_ID)) AS booked_seats
+                FROM Assigned a
+                JOIN `Order` o ON a.Order_ID = o.Order_ID
+                JOIN Order_contains_Flight OCF ON o.Order_ID = OCF.Order_Order_ID
+                WHERE o.Status = 'Active'
+                GROUP BY OCF.Flight_ID
+            ) seat_counts ON f.ID = seat_counts.Flight_ID
             WHERE f.Path_Origin_Airport = %s
               AND f.Path_Dest_Airport = %s
               AND DATE(f.Departure_DateTime) = %s
+              AND (p.Total_Capacity - COALESCE(seat_counts.booked_seats, 0)) > 0
             ORDER BY f.Departure_DateTime ASC
             """,
             (origin_airport.upper(), destination_airport.upper(), departure_date),
