@@ -1,185 +1,94 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - FLYTAU</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-  </head>
-  <body>
+</head>
+<body>
     <main class="container">
-      <section class="card mt-xl m-auto" style="max-width: 640px;">
-        <div class="card-header">
-          <h1 class="card-title">Create a FLYTAU Account</h1>
-          <p class="text-muted">
-            Sign up as a customer using your personal details. Managers do not sign up here.
-          </p>
-        </div>
-
-        <div class="card-body">
-          {% if error %}
-            <div class="alert alert-error">{{ error }}</div>
-          {% endif %}
-
-          {% set data = form_data or {} %}
-
-          <form action="{{ url_for('signup') }}" method="post">
-            <div class="form-group">
-              <label for="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                placeholder="you@example.com"
-                value="{{ data.get('email', '') }}"
-                required
-              />
+        <section class="card mt-xl m-auto" style="max-width: 500px;">
+            <div class="card-header">
+                <h1 class="card-title">Create Account</h1>
+                <p class="text-muted">Register to start booking your flights</p>
             </div>
 
-            <div class="form-group">
-              <label for="password">Password</label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                placeholder="Enter a password"
-                required
-              />
+            <div class="card-body">
+                {% if error %}
+                    <div class="alert alert-error mb-md">{{ error }}</div>
+                {% endif %}
+
+                <form action="{{ url_for('signup') }}" method="POST">
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label for="first_name">First Name</label>
+                            <input type="text" id="first_name" name="first_name" value="{{ form_data.first_name if form_data else '' }}" required>
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="last_name">Last Name</label>
+                            <input type="text" id="last_name" name="last_name" value="{{ form_data.last_name if form_data else '' }}" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-md">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" value="{{ form_data.email if form_data else '' }}" required>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label for="passport_num">Passport Number</label>
+                            <input type="text" id="passport_num" name="passport_num" value="{{ form_data.passport_num if form_data else '' }}" required>
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="b_date">Birth Date</label>
+                            <input type="date" id="b_date" name="b_date" value="{{ form_data.b_date if form_data else '' }}" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-md" id="phone-container">
+                        <label>Phone Number(s)</label>
+                        <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                            <input type="tel" name="phones" placeholder="e.g. 0501234567" required>
+                            <button type="button" class="btn btn-secondary" onclick="addPhoneField()">+</button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <div style="flex: 1;">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" name="password" required>
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="confirm_password">Confirm Password</label>
+                            <input type="password" id="confirm_password" name="confirm_password" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Register</button>
+                </form>
+
+                <div class="text-center mt-md">
+                    <p class="small text-muted">Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+                </div>
             </div>
-
-            <div class="form-group">
-              <label for="confirm_password">Confirm Password</label>
-              <input
-                type="password"
-                id="confirm_password"
-                name="confirm_password"
-                placeholder="Re-enter your password"
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="passport_num">Passport Number</label>
-              <input
-                type="text"
-                id="passport_num"
-                name="passport_num"
-                placeholder="Enter your passport number"
-                value="{{ data.get('passport_num', '') }}"
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="b_date">Birth Date</label>
-              <input
-                type="date"
-                id="b_date"
-                name="b_date"
-                value="{{ data.get('b_date', '') }}"
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="first_name">First Name</label>
-              <input
-                type="text"
-                id="first_name"
-                name="first_name"
-                placeholder="First name"
-                value="{{ data.get('first_name', '') }}"
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="last_name">Last Name</label>
-              <input
-                type="text"
-                id="last_name"
-                name="last_name"
-                placeholder="Last name"
-                value="{{ data.get('last_name', '') }}"
-                required
-              />
-            </div>
-
-            {# Determine existing phone values from form_data (supports multiple phones) #}
-            {% set phone_values = [] %}
-            {% if data and data.getlist is defined %}
-              {% set phone_values = data.getlist('phones') %}
-            {% elif data %}
-              {% set _single_phone = data.get('phone', '') %}
-              {% if _single_phone %}
-                {% set phone_values = [_single_phone] %}
-              {% endif %}
-            {% endif %}
-
-            <div class="form-group">
-              <label for="phone-0">Phone Numbers</label>
-              <div id="phone-fields">
-                {# Always render at least one phone input #}
-                <input
-                  type="tel"
-                  id="phone-0"
-                  name="phones"
-                  placeholder="Primary phone number"
-                  value="{{ (phone_values[0] if phone_values|length > 0 else '') }}"
-                  required
-                />
-
-                {# Render additional phone inputs, if any #}
-                {% for phone in phone_values[1:] %}
-                  <input
-                    type="tel"
-                    name="phones"
-                    placeholder="Additional phone number"
-                    value="{{ phone }}"
-                    class="mt-xs"
-                  />
-                {% endfor %}
-              </div>
-              <br></>
-              <button type="button" class="btn btn-link btn-sm mt-xs" id="add-phone-btn">
-                Add another phone number
-              </button>
-              <br></br>
-              <p class="text-muted" style="margin-top: 0.25rem;">
-                At least one phone number is required. You may add additional numbers if you wish.
-              </p>
-            </div>
-
-            <div class="btn-group mt-md">
-              <button type="submit" class="btn btn-primary">Sign Up</button>
-              <a href="{{ url_for('home') }}" class="btn btn-secondary">Back to Home</a>
-            </div>
-          </form>
-
-          <p class="mt-lg text-muted">
-            Already have an account?
-            <a href="{{ url_for('login') }}">Log in</a>
-          </p>
-        </div>
-      </section>
+        </section>
     </main>
 
     <script>
-      (function () {
-        var addBtn = document.getElementById("add-phone-btn");
-        var phoneFields = document.getElementById("phone-fields");
-
-        if (!addBtn || !phoneFields) {
-          return;
+        function addPhoneField() {
+            const container = document.getElementById('phone-container');
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.gap = '5px';
+            div.style.marginBottom = '5px';
+            div.innerHTML = `
+                <input type="tel" name="phones" placeholder="Additional phone">
+                <button type="button" class="btn btn-danger" onclick="this.parentElement.remove()">-</button>
+            `;
+            container.appendChild(div);
         }
-
-        addBtn.addEventListener("click", function () {
-          var input = document.createElement("input");
-          input.type = "tel";
-          input.name = "phones";
-          input.placeholder = "Additional phone number";
-          input.className = "mt-xs";
-          phoneFields.appendChild(input);
-        });
-      })();
     </script>
-  </body>
+</body>
 </html>

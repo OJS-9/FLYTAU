@@ -1,58 +1,169 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Guest Sign-In - FLYTAU</title>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Guest Portal - FLYTAU</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-  </head>
-  <body>
+    <style>
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
     <main class="container">
-      <section class="card mt-xl m-auto" style="max-width: 480px;">
-        <div class="card-header">
-          {% if guest_email %}
-            <h1 class="card-title">Welcome, Guest!</h1>
-            <p class="text-muted">
-              You are signed in as {{ guest_email }}.
-            </p>
-          {% else %}
-            <h1 class="card-title">Guest Sign-In</h1>
-            <p class="text-muted">
-              Continue as a guest using your email only.
-            </p>
-          {% endif %}
-        </div>
 
-        <div class="card-body">
-          {% if error %}
-            <div class="alert alert-error">{{ error }}</div>
-          {% endif %}
-
-          {% if guest_email %}
-            <div class="btn-group mt-md">
-              <a href="{{ url_for('logout') }}" class="btn btn-danger">Log Out</a>
+        {# שלב 1: אם אין אימייל ב-Session, מציגים רק את טופס ההרשמה #}
+        {% if not session.get('guest_email') %}
+        <section class="card mt-xl m-auto" style="max-width: 480px;">
+            <div class="card-header">
+                <h1 class="card-title">Guest Sign-In</h1>
+                <p class="text-muted">Enter your email to continue as a guest</p>
             </div>
-          {% else %}
-            <form action="{{ url_for('guest_sign_in_route') }}" method="post">
-              <div class="form-group">
-                <label for="guest-email">Email</label>
-                <input
-                  type="email"
-                  id="guest-email"
-                  name="email"
-                  placeholder="Enter your email"
-                  value="{{ last_email or '' }}"
-                  required
-                />
-              </div>
+            <div class="card-body">
+                {% if error %}
+                    <div class="alert alert-error mb-md">{{ error }}</div>
+                {% endif %}
+                <form action="{{ url_for('guest_sign_in_route') }}" method="POST">
+                    <div class="form-group">
+                        <label for="guest-email">Email Address</label>
+                        <input type="email" id="guest-email" name="email" placeholder="example@mail.com" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 mt-md">Continue to Flights</button>
+                </form>
+                <div class="text-center mt-md">
+                    <a href="{{ url_for('login') }}" class="text-muted small">Back to Member Login</a>
+                </div>
+            </div>
+        </section>
 
-              <div class="btn-group mt-md">
-                <button type="submit" class="btn btn-primary">Continue as guest</button>
-                <a href="{{ url_for('login') }}" class="btn btn-secondary">Back to Login</a>
-              </div>
-            </form>
-          {% endif %}
-        </div>
-      </section>
+        {# שלב 2: אם האורח רשום, מציגים את הדשבורד עם ה-Tabs #}
+        {% else %}
+        <nav class="flight-nav">
+            <a href="javascript:void(0)" id="tab-book" class="flight-nav-item active" onclick="showTab('book')">Book A Flight</a>
+            <a href="javascript:void(0)" id="tab-manage" class="flight-nav-item" onclick="showTab('manage')">My Booking</a>
+            <a href="{{ url_for('logout') }}" class="flight-nav-item" style="margin-left: auto; color: #dc2626;">Logout ({{ session.get('guest_email') }})</a>
+        </nav>
+
+        {% if error %}
+            <div class="alert alert-error mt-md">{{ error }}</div>
+        {% endif %}
+
+        <section id="section-book" class="card mt-xl">
+            <div class="card-header">
+                <h1 class="card-title">Welcome, Guest!</h1>
+                <p class="text-muted">Search for flights to book your next trip.</p>
+            </div>
+            <div class="card-body">
+                <form id="flight-search-form" class="flight-search-form">
+                    <div class="flight-search-fields">
+                        <div class="flight-field">
+                            <label for="origin_airport">Origin</label>
+                            <input type="text" id="origin_airport" name="origin_airport" placeholder="TLV" maxlength="3" required>
+                        </div>
+                        <div class="flight-path-icon">
+                            <svg width="60" height="40" viewBox="0 0 60 40">
+                                <path d="M 5 20 Q 30 5, 55 20" stroke="var(--color-primary-light)" stroke-width="2" fill="none" stroke-dasharray="5,5"/>
+                                <path d="M 25 18 L 30 20 L 25 22 L 28 20 Z" fill="var(--color-primary)" transform="translate(5, 0)"/>
+                            </svg>
+                        </div>
+                        <div class="flight-field">
+                            <label for="destination_airport">Where to?</label>
+                            <input type="text" id="destination_airport" name="destination_airport" placeholder="Destination" maxlength="3" required>
+                        </div>
+                        <div class="flight-field">
+                            <label for="departure_date">Departure</label>
+                            <input type="date" id="departure_date" name="departure_date" required>
+                        </div>
+                        <div class="flight-field">
+                            <label for="passengers">Passenger</label>
+                            <input type="number" id="passengers" name="passengers" value="1" min="1" max="9" required>
+                        </div>
+                    </div>
+                    <div class="flight-search-actions">
+                        <button type="submit" class="btn btn-primary">Search Flights</button>
+                    </div>
+                </form>
+                <div id="search-results" class="search-results hidden mt-lg"></div>
+            </div>
+        </section>
+
+        <section id="section-manage" class="card mt-xl hidden">
+            <div class="card-header">
+                <h1 class="card-title">Find Your Reservation</h1>
+                <p class="text-muted">Enter your Order ID to view or cancel your booking.</p>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('manage_reservations') }}" method="GET" style="max-width: 400px;">
+                    <div class="form-group">
+                        <label for="order_id">Order ID</label>
+                        <input type="number" id="order_id" name="order_id" placeholder="Enter Order ID" required>
+                    </div>
+                    <button type="submit" class="btn btn-secondary w-100 mt-md">View My Order</button>
+                </form>
+            </div>
+        </section>
+        {% endif %}
     </main>
-  </body>
-</html>
 
+    <script>
+        // לוגיקת החלפת הטאבים
+        function showTab(tabName) {
+            const bookSection = document.getElementById('section-book');
+            const manageSection = document.getElementById('section-manage');
+            const bookTab = document.getElementById('tab-book');
+            const manageTab = document.getElementById('tab-manage');
+
+            if (tabName === 'book') {
+                bookSection.classList.remove('hidden');
+                manageSection.classList.add('hidden');
+                bookTab.classList.add('active');
+                manageTab.classList.remove('active');
+            } else {
+                manageSection.classList.remove('hidden');
+                bookSection.classList.add('hidden');
+                manageTab.classList.add('active');
+                bookTab.classList.remove('active');
+            }
+        }
+
+        // לוגיקת חיפוש הטיסות (AJAX)
+        const searchForm = document.getElementById('flight-search-form');
+        if (searchForm) {
+            searchForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const resultsDiv = document.getElementById('search-results');
+                resultsDiv.classList.remove('hidden');
+                resultsDiv.innerHTML = '<p class="text-muted">Searching for flights...</p>';
+
+                try {
+                    const response = await fetch('/search_flights', {
+                        method: 'POST',
+                        body: new FormData(this)
+                    });
+                    const data = await response.json();
+                    if (data.error) {
+                        resultsDiv.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+                    } else if (data.flights && data.flights.length > 0) {
+                        let html = '<h3 class="mb-md">Search Results</h3><div class="flight-results-list">';
+                        data.flights.forEach(f => {
+                            html += `
+                                <div class="flight-result-card" style="border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <div style="font-weight: bold;">${f.origin_airport} &rarr; ${f.destination_airport}</div>
+                                        <div class="text-muted small">${f.departure_datetime}</div>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm" onclick="location.href='/select_seat?flight_id=${f.flight_id}'">Select</button>
+                                </div>`;
+                        });
+                        html += '</div>';
+                        resultsDiv.innerHTML = html;
+                    } else {
+                        resultsDiv.innerHTML = '<p class="text-muted">No flights found.</p>';
+                    }
+                } catch (err) {
+                    resultsDiv.innerHTML = '<div class="alert alert-error">Error communicating with server.</div>';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
