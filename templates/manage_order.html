@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Booking - FLYTAU</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <main class="container">
+        <nav class="flight-nav">
+            <a href="#" class="flight-nav-item active">My Booking Details</a>
+
+            {% if session.get('user_type') == 'guest' %}
+                <a href="{{ url_for('guest_dashboard') }}" class="flight-nav-item">Return to Dashboard</a>
+            {% elif session.get('user_type') == 'customer' %}
+                <a href="{{ url_for('customer_dashboard') }}" class="flight-nav-item">Return to Dashboard</a>
+            {% else %}
+                <a href="/" class="flight-nav-item">Return Home</a>
+            {% endif %}
+        </nav>
+
+        <section class="card mt-xl m-auto" style="max-width: 700px;">
+
+            {% if error_message %}
+            <div style="background-color: #fef2f2; border: 1px solid #ef4444; color: #b91c1c; padding: 15px; text-align: center; border-radius: 8px; margin: 10px;">
+                <strong>Error:</strong> {{ error_message }}
+            </div>
+            {% endif %}
+
+            {% if order.Status != 'Active' %}
+            <div style="background-color: #fee2e2; border-bottom: 2px solid #ef4444; color: #b91c1c; padding: 20px; text-align: center; font-weight: bold; border-radius: 12px 12px 0 0;">
+                ATTENTION: THIS RESERVATION IS CANCELLED
+                <div style="font-size: 1rem; font-weight: normal; margin-top: 5px;">
+                    Cancellation Fee Charged: <strong>${{ "%.2f"|format(order.Total_Price) }}</strong> (5%)
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card-header border-bottom">
+                <h1 class="card-title">Reservation Summary</h1>
+                <p class="text-muted">Booking Reference: <strong>#{{ order.Ticket_ID }}</strong></p>
+                <p class="small">Status: <span style="color: {{ 'green' if order.Status == 'Active' else 'red' }}">{{ order.Status }}</span></p>
+            </div>
+
+            <div class="card-body">
+                <div class="booking-details-container" style="background: var(--color-background); border: 1px solid #eef2f6; border-radius: 12px; padding: 24px; {% if order.Status != 'Active' %} opacity: 0.6; {% endif %}">
+
+                    <div style="margin-bottom: 20px;">
+                        <label class="text-muted small" style="text-transform: uppercase; letter-spacing: 1px;">Passenger Account</label>
+                        <div class="h3" style="margin-top: 5px;">{{ order.Passenger_Email }}</div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                        <div>
+                            <span class="text-muted small">FROM</span>
+                            <div class="h2" style="color: var(--color-primary); margin: 0;">{{ order.Origin }}</div>
+                        </div>
+
+                        <div style="text-align: center; flex-grow: 1; padding: 0 20px;">
+                            <div style="border-top: 2px dashed #cbd5e1; width: 100%;"></div>
+                        </div>
+
+                        <div style="text-align: right;">
+                            <span class="text-muted small">TO</span>
+                            <div class="h2" style="color: var(--color-primary); margin: 0;">{{ order.Destination }}</div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eef2f6;">
+                        <div>
+                            <span class="text-muted small">DEPARTURE</span>
+                            <div style="font-weight: 600;">{{ order.Departure_Time }}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="text-muted small">SEAT</span>
+                            <div style="font-weight: 600; color: var(--color-primary);">{{ order.Seat_ID if order.Status == 'Active' else 'Released' }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px; display: flex; gap: 15px;">
+                    {% if order.Status == 'Active' %}
+                        <form action="{{ url_for('cancel_order_route') }}" method="POST" style="flex: 2;" onsubmit="return confirm('Confirm cancellation? 5% fee applies and 36h limit check will be performed.');">
+                            <input type="hidden" name="order_id" value="{{ order.Ticket_ID }}">
+                            <button type="submit" class="btn btn-danger w-100" style="padding: 12px;">Cancel Reservation</button>
+                        </form>
+                    {% else %}
+                        <button disabled class="btn btn-secondary" style="flex: 2; cursor: not-allowed; opacity: 0.5;">Reservation Cancelled</button>
+                    {% endif %}
+
+                    {% if session.get('user_type') == 'guest' %}
+                        <a href="{{ url_for('guest_dashboard') }}" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;">Back</a>
+                    {% elif session.get('user_type') == 'customer' %}
+                        <a href="{{ url_for('customer_dashboard') }}" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;">Back</a>
+                    {% else %}
+                        <a href="/" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;">Back</a>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

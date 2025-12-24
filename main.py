@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, jsonify
+from flask import Flask, render_template, request, redirect, session, jsonify, url_for
 from flask_session import Session
 from datetime import timedelta, datetime
 from utils import (
@@ -265,16 +265,16 @@ def logout():
     return redirect("/")
 
 
-@app.route("/search_flights", methods=["POST"])
+@app.route("/search_flights", methods=["POST", "GET"])
 def search_flights_route():
     """
     Handle flight search requests via AJAX.
     Validates user is logged in as customer, validates inputs, and returns JSON results.
     """
-    # Check if user is logged in as customer
-    if session.get("user_type") != "customer":
-        return jsonify({"error": "You must be logged in to search flights."}), 401
-
+    # Check if user is logged in as customer or guest
+    user_type = session.get("user_type")
+    if user_type not in ["customer", "guest"]:
+        return jsonify({"error": "You must be signed in (as guest or customer) to search flights."}), 401
     # Extract and validate form data
     origin_airport = request.form.get("origin_airport", "").strip().upper()
     destination_airport = request.form.get("destination_airport", "").strip().upper()
@@ -329,6 +329,65 @@ def search_flights_route():
     except Exception as e:
         # In a real app, log the error
         return jsonify({"error": "An error occurred while searching for flights. Please try again."}), 500
+
+
+@app.route("/manage_reservations", methods=["GET"])
+def manage_reservations():
+    """
+    Unified route to view order details.
+    Converts order_id to integer to match SQL schema.
+    """
+    order_id_raw = request.args.get("order_id")
+    user_type = session.get("user_type")
+
+    # Get the correct email from the session based on login type
+    identifier = session.get("guest_email") if user_type == "guest" else session.get("user_email")
+
+    if not order_id_raw or not identifier:
+        return redirect("/")
+
+    try:
+        from utils import get_ticket_details
+        # CRITICAL: Convert to int because DB schema uses INT for Order_ID
+        order_id = int(order_id_raw)
+
+        order_details = get_ticket_details(order_id, identifier)
+
+        if not order_details:
+            # Stay on current dashboard if not found
+            target = "guest.html" if user_type == "guest" else "user_dashboard.html"
+            return render_template(target, error="Order not found or unauthorized for your email.")
+
+        return render_template("manage_order.html", order=order_details)
+
+    except (ValueError, TypeError):
+        # Handles cases where order_id is not a number
+        return redirect("/")
+
+
+@app.route("/cancel_order", methods=["POST"])
+def cancel_order_route():
+    order_id = request.form.get("order_id")
+    user_type = session.get("user_type")
+    email = session.get("guest_email") if user_type == "guest" else session.get("user_email")
+
+    if order_id and email:
+        from utils import delete_ticket
+        # Receiving both values from the utility function
+        success, message = delete_ticket(int(order_id), email)
+
+        if success:
+            # Redirect to see the updated "Cancelled" status and the new 5% price
+            return redirect(url_for('manage_reservations', order_id=order_id))
+        else:
+            # If failed (e.g. < 36h), we can pass the message back to the page
+            from utils import get_ticket_details
+            order_data = get_ticket_details(int(order_id), email)
+            return render_template("manage_order.html", order=order_data, error_message=message)
+
+    return "Invalid Request", 400
+
+
 
 
 if __name__ == "__main__":

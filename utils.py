@@ -3,7 +3,7 @@ from contextlib import contextmanager
 import os
 from typing import Optional, Tuple, List, Dict
 from dotenv import load_dotenv
-
+from datetime import datetime, timedelta
 load_dotenv()
 
 
@@ -186,3 +186,102 @@ def search_flights(origin_airport: str, destination_airport: str, departure_date
         
         return flights
 
+
+def get_ticket_details(order_id: int, email: str):
+    """
+    Fetches comprehensive booking details including status and total price.
+    Updated to include Total_Price to fix the Jinja2 UndefinedError in the frontend.
+    """
+    with get_db_connection() as cursor:
+        # SQL Query includes all necessary fields for the management UI
+        query = """
+            SELECT 
+                o.Order_ID, 
+                f.Path_Origin_Airport, 
+                f.Path_Dest_Airport, 
+                f.Departure_DateTime,
+                a.Class_ID,
+                o.Status,
+                o.Total_Price
+            FROM `Order` o
+            LEFT JOIN Order_contains_Flight ocf ON o.Order_ID = ocf.Order_Order_ID
+            LEFT JOIN Flight f ON ocf.Flight_ID = f.ID
+            LEFT JOIN Assigned a ON o.Order_ID = a.Order_ID
+            WHERE o.Order_ID = %s AND (o.Guest_Mail = %s OR o.Costumer_Mail = %s)
+        """
+        try:
+            cursor.execute(query, (order_id, email, email))
+            row = cursor.fetchone()
+
+            if row:
+                # Mapping the database row to a dictionary for easy template access
+                return {
+                    "Ticket_ID": row[0],
+                    "Origin": row[1] if row[1] else "N/A",
+                    "Destination": row[2] if row[2] else "N/A",
+                    "Departure_Time": row[3].strftime("%Y-%m-%d %H:%M") if row[3] else "TBD",
+                    "Seat_ID": row[4] if row[4] else "Not Assigned",
+                    "Status": row[5],
+                    "Total_Price": row[6]  # Critical for showing the 5% penalty fee
+                }
+            return None
+        except Exception as e:
+            print(f"Error fetching ticket details: {e}")
+            return None
+
+def delete_ticket(order_id: int, email: str):
+    """
+    Handles the cancellation logic:
+    1. Validates that the cancellation occurs at least 36 hours before departure.
+    2. Updates the order status to 'Costumer Cancelation'.
+    3. Calculates a 5% penalty fee and updates the Total_Price.
+    4. Frees up the assigned seat.
+
+    Returns: (bool, string) -> (Success status, Message for the user)
+    """
+    with get_db_connection() as cursor:
+        try:
+            # Fetch flight departure time, current price, and order status
+            query = """
+                SELECT f.Departure_DateTime, o.Total_Price, o.Status
+                FROM `Order` o
+                JOIN Order_contains_Flight ocf ON o.Order_ID = ocf.Order_Order_ID
+                JOIN Flight f ON ocf.Flight_ID = f.ID
+                WHERE o.Order_ID = %s AND (o.Guest_Mail = %s OR o.Costumer_Mail = %s)
+            """
+            cursor.execute(query, (order_id, email, email))
+            result = cursor.fetchone()
+
+            if not result:
+                return False, "Order not found or access denied."
+
+            departure_time, current_price, status = result
+
+            if status != 'Active':
+                return False, "This order is already cancelled."
+
+            # Time Logic: Check if current time is at least 36 hours before departure
+            now = datetime.now()
+            if departure_time - now < timedelta(hours=36):
+                return False, "Cancellation is only allowed up to 36 hours before the flight."
+
+            # Penalty Logic: Calculate 5% of the original price
+            # Converting to float to ensure mathematical precision
+            penalty_fee = float(current_price) * 0.05
+
+            # Database Update: Update status/price and remove seat assignment
+            # Update Order table
+            cursor.execute("""
+                UPDATE `Order` 
+                SET Status = 'Costumer Cancelation', Total_Price = %s 
+                WHERE Order_ID = %s
+            """, (penalty_fee, order_id))
+
+            # Remove from Assigned table to make the seat available
+            cursor.execute("DELETE FROM Assigned WHERE Order_ID = %s", (order_id,))
+
+            return True, f"Order successfully cancelled. A 5% fee (${penalty_fee:.2f}) was charged."
+
+        except Exception as e:
+            print(f"Database Error during cancellation: {e}")
+            return False, "An internal error occurred. Please try again later."
