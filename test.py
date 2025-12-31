@@ -30,3 +30,4 @@ with get_db_connection() as cursor:
     cursor.execute("SELECT * FROM flytau.path")
     result = cursor.fetchall()
     print(result)
+

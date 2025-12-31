@@ -2,6 +2,11 @@ from flask import Flask, render_template, request, redirect, session, jsonify, u
 from flask_session import Session
 from datetime import timedelta, datetime
 from utils import *
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import io
+import base64
 
 app = Flask(__name__)
 
@@ -496,7 +501,53 @@ def manage_flights():
 
 @app.route('/view_reports')
 def view_reports():
-    return "Management Reports - Coming Soon"
+    if session.get("user_type") != "manager":
+        return redirect("/login")
+    return render_template("reports_menu.html")
+
+
+@app.route('/reports/employee_hours')
+def report_employee_hours():
+    if session.get("user_type") != "manager":
+        return redirect("/login")
+
+    try:
+        data = get_employee_hours_report()
+    except Exception:
+        data = []
+
+    if not data:
+        return render_template("report_display.html",
+                               report_title="Employee Flight Hours",
+                               chart_url=None)
+
+    names = [row['name'] for row in data]
+    short_hours = [row['short_hours'] for row in data]
+    long_hours = [row['long_hours'] for row in data]
+
+    plt.figure(figsize=(10, 6))
+
+    plt.bar(names, short_hours, label='Short Flights (<=6h)', color='#E67E22')
+    plt.bar(names, long_hours, bottom=short_hours, label='Long Flights (>6h)', color='#2C3E50')
+
+    plt.xlabel('Employees')
+    plt.ylabel('Flight Hours')
+    plt.title('Accumulated Flight Hours per Employee')
+    plt.legend()
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plot_url = base64.b64encode(img.getvalue()).decode()
+    plt.close()
+
+    return render_template("report_display.html",
+                           report_title="Employee Flight Hours",
+                           chart_url=plot_url)
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)
