@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Seats - FLYTAU</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        :root {
+            --business-bg: #eff6ff; --business-text: #1e40af; --business-border: #bfdbfe;
+            --economy-bg: #f0fdf4; --economy-text: #166534; --economy-border: #bbf7d0;
+            --occupied-bg: #e5e7eb; --occupied-text: #94a3b8;
+            --selected-bg: #2563eb;
+        }
+
+        .airplane-body {
+            max-width: 600px; margin: 40px auto; padding: 70px 30px;
+            background: #ffffff; border: 3px solid #d1d5db;
+            border-radius: 140px 140px 40px 40px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; gap: 12px; align-items: center;
+        }
+
+        .seat-row { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; }
+        .aisle-gap { width: 45px; }
+
+        /* Hide native checkbox - Python still sees the value */
+        .seat-input { display: none; }
+        .seat-wrapper { cursor: pointer; user-select: none; }
+
+        /* Base seat design */
+        .seat-box {
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; font-size: 0.8rem; font-weight: 700;
+            border: 2px solid transparent; transition: 0.2s;
+        }
+
+        .business { width: 70px; height: 60px; background: var(--business-bg); color: var(--business-text); border-color: var(--business-border); }
+        .economy { width: 50px; height: 50px; background: var(--economy-bg); color: var(--economy-text); border-color: var(--economy-border); }
+
+        /* CSS Magic: Style seat-box when the hidden input is checked */
+        .seat-input:checked + .seat-box {
+            background: var(--selected-bg) !important;
+            color: white !important;
+            transform: scale(1.1);
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+        }
+
+        .seat-box.occupied {
+            background: var(--occupied-bg) !important;
+            color: var(--occupied-text) !important;
+            cursor: not-allowed;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="text-center mt-lg">
+            <h1>Choose Your Seats</h1>
+            <p>Flight #{{ flight_id }} | Select <strong>{{ max_seats }}</strong> seats</p>
+        </header>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-danger text-center">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form action="/booking_summary" method="POST" id="seat-form">
+            <input type="hidden" name="flight_id" value="{{ flight_id }}">
+
+            <div class="airplane-body">
+                {% if seats %}
+                    {% for row_num, row_seats in seats | groupby('row_num') %}
+                        <div class="seat-row">
+                            {% set mid = (row_seats|length / 2) | int %}
+                            {% for seat in row_seats %}
+                                {% if loop.index0 == mid %}<div class="aisle-gap"></div>{% endif %}
+
+                                <label class="seat-wrapper">
+                                    <input type="checkbox" name="selected_seats" value="{{ seat.seat_id }}"
+                                           class="seat-input" {% if seat.is_occupied %}disabled{% endif %}>
+
+                                    <span class="seat-box {{ seat.class_type | lower }} {{ 'occupied' if seat.is_occupied }}">
+                                        {{ seat.row_num }}{{ seat.letter }}
+                                    </span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="alert alert-danger">Error: No seats found for this plane.</p>
+                {% endif %}
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; align-items: center; padding: 20px 0; gap: 20px;">
+                <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+                    Required: <strong>{{ max_seats }}</strong> seats
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg">
+                    Confirm Selection
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Minimal JS only to prevent selecting MORE than MAX
+        const MAX = {{ max_seats }};
+        const checkboxes = document.querySelectorAll('.seat-input');
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                const checked = document.querySelectorAll('.seat-input:checked');
+                if (checked.length > MAX) {
+                    cb.checked = false;
+                    alert(`You can only select up to ${MAX} seats.`);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
