@@ -12,7 +12,7 @@
       <!-- Navigation Bar -->
       <nav class="flight-nav">
         <a href="javascript:void(0)" id="tab-book" class="flight-nav-item active" onclick="showTab('book')">Book A Flight</a>
-        <a href="javascript:void(0)" id="tab-manage" class="flight-nav-item" onclick="showTab('manage')">My Booking</a>
+        <a href="javascript:void(0)" id="tab-manage" class="flight-nav-item" onclick="showTab('manage')">My Bookings</a>
         <a href="{{ url_for('logout') }}" class="flight-nav-item" style="margin-left: auto; color: #dc2626;">Logout ({{ user_email }})</a>
       </nav>
 
@@ -118,17 +118,71 @@
       <!-- My Booking Section -->
       <section id="section-manage" class="card mt-xl hidden">
         <div class="card-header">
-          <h1 class="card-title">Find Your Reservation</h1>
-          <p class="text-muted">Enter your Order ID to view or cancel your booking.</p>
+          <h1 class="card-title">My Bookings</h1>
+          <p class="text-muted">View your order history or find a specific reservation.</p>
         </div>
         <div class="card-body">
-          <form action="{{ url_for('manage_reservations') }}" method="GET" style="max-width: 400px;">
-            <div class="form-group">
-              <label for="order_id">Order ID</label>
-              <input type="number" id="order_id" name="order_id" placeholder="Enter Order ID" required>
-            </div>
-            <button type="submit" class="btn btn-secondary w-100 mt-md">View My Order</button>
-          </form>
+          <!-- Order History Section -->
+          <div class="order-history-section" style="margin-bottom: 2rem;">
+            <h2 style="margin-bottom: 1rem;">Order History</h2>
+            {% if order_history and order_history|length > 0 %}
+              <div class="order-history-list">
+                {% for order in order_history %}
+                  <div class="order-history-card" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background-color: #f9fafb;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                      <div>
+                        <h3 style="margin: 0; font-size: 1.1rem; color: #1f2937;">Order #{{ order.Ticket_ID }}</h3>
+                        <p style="margin: 0.25rem 0; color: #6b7280; font-size: 0.9rem;">Ordered on: {{ order.Order_Date }}</p>
+                      </div>
+                      <span style="padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; font-weight: 500;
+                        {% if order.Status == 'Completed' %}background-color: #d1fae5; color: #065f46;
+                        {% elif order.Status == 'Costumer Cancelation' %}background-color: #fee2e2; color: #991b1b;
+                        {% elif order.Status == 'System Cancelation' %}background-color: #fef3c7; color: #92400e;
+                        {% else %}background-color: #e5e7eb; color: #374151;{% endif %}">
+                        {{ order.Status }}
+                      </span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 0.75rem;">
+                      <div>
+                        <p style="margin: 0; font-size: 0.85rem; color: #6b7280;">Route</p>
+                        <p style="margin: 0.25rem 0; font-weight: 500; color: #1f2937;">
+                          {{ order.Origin }} → {{ order.Destination }}
+                        </p>
+                      </div>
+                      <div>
+                        <p style="margin: 0; font-size: 0.85rem; color: #6b7280;">Departure</p>
+                        <p style="margin: 0.25rem 0; font-weight: 500; color: #1f2937;">{{ order.Departure_Time }}</p>
+                      </div>
+                      <div>
+                        <p style="margin: 0; font-size: 0.85rem; color: #6b7280;">Seats</p>
+                        <p style="margin: 0.25rem 0; font-weight: 500; color: #1f2937;">{{ order.Seat_ID }}</p>
+                      </div>
+                      <div>
+                        <p style="margin: 0; font-size: 0.85rem; color: #6b7280;">Total Price</p>
+                        <p style="margin: 0.25rem 0; font-weight: 500; color: #1f2937;">${{ order.Total_Price }}</p>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="text-muted" style="padding: 2rem; text-align: center; background-color: #f9fafb; border-radius: 8px;">
+                No order history found. Your completed and cancelled orders will appear here.
+              </p>
+            {% endif %}
+          </div>
+
+          <!-- Find Specific Order Section -->
+          <div style="border-top: 1px solid #e5e7eb; padding-top: 1.5rem; margin-top: 1.5rem;">
+            <h2 style="margin-bottom: 1rem;">Find a Specific Reservation</h2>
+            <form action="{{ url_for('manage_reservations') }}" method="GET" style="max-width: 400px;">
+              <div class="form-group">
+                <label for="order_id">Order ID</label>
+                <input type="number" id="order_id" name="order_id" placeholder="Enter Order ID" required>
+              </div>
+              <button type="submit" class="btn btn-secondary w-100 mt-md">View My Order</button>
+            </form>
+          </div>
         </div>
       </section>
     </main>

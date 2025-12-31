@@ -15,6 +15,9 @@ app.config.update(
 )
 Session(app)
 
+# Update active orders to completed on app startup
+update_active_orders_to_completed()
+
 
 @app.errorhandler(404)
 def invalid_route(e):
@@ -220,10 +223,19 @@ def guest_sign_in_route():
 def user_dashboard():
     if session.get("user_type") != "customer":
         return redirect("/login")
+    
+    # Update active orders to completed before fetching order history
+    update_active_orders_to_completed()
+    
+    # Get order history for the logged-in user
+    user_email = session.get("user_email")
+    order_history = get_user_order_history(user_email) if user_email else []
+    
     return render_template(
         "user_dashboard.html",
         user_name=session.get("user_name"),
-        user_email=session.get("user_email"),
+        user_email=user_email,
+        order_history=order_history,
     )
 
 
@@ -340,6 +352,9 @@ def manage_reservations():
             return redirect(url_for('user_dashboard'))
         else:
             return redirect(url_for('guest_dashboard'))
+
+    # Update active orders to completed before fetching ticket details
+    update_active_orders_to_completed()
 
     # Fetch details using the updated logic from utils.py
     try:

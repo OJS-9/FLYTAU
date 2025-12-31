@@ -201,6 +201,45 @@ def get_ticket_details(order_id: int, email: str):
             print(f"Database Error: {e}")
             return None
 
+def get_user_order_history(email: str) -> List[Dict]:
+    """
+    Fetches order history for a user (customer or guest) with status that is not 'Active'.
+    Returns a list of orders with ticket details.
+    """
+    with get_db_connection() as cursor:
+        query = """
+            SELECT 
+                o.Order_ID, f.Path_Origin_Airport, f.Path_Dest_Airport, f.Departure_DateTime,
+                GROUP_CONCAT(CONCAT(c.Row_Num, c.Column_Letter) SEPARATOR ', ') as Seats,
+                o.Status, o.Total_Price, o.Order_Date
+            FROM `Order` o
+            JOIN Flight f ON o.Flight_ID = f.ID
+            LEFT JOIN Assigned a ON o.Order_ID = a.Order_ID
+            LEFT JOIN CLASS c ON a.Class_ID = c.ID 
+            WHERE (o.Guest_Mail = %s OR o.Costumer_Mail = %s) AND o.Status != 'Active'
+            GROUP BY o.Order_ID
+            ORDER BY o.Order_Date DESC
+        """
+        try:
+            cursor.execute(query, (email, email))
+            rows = cursor.fetchall()
+            orders = []
+            for row in rows:
+                orders.append({
+                    "Ticket_ID": row[0],
+                    "Origin": row[1],
+                    "Destination": row[2],
+                    "Departure_Time": row[3].strftime("%Y-%m-%d %H:%M") if row[3] else "TBD",
+                    "Seat_ID": row[4] if row[4] else "Not Assigned",
+                    "Status": row[5],
+                    "Total_Price": row[6],
+                    "Order_Date": row[7].strftime("%Y-%m-%d %H:%M") if row[7] else "N/A"
+                })
+            return orders
+        except Exception as e:
+            print(f"Database Error: {e}")
+            return []
+
 def delete_ticket(order_id: int, email: str):
     """
     Handles cancellation logic using confirmed Departure_DateTime.
@@ -325,3 +364,48 @@ def create_order_with_seats(flight_id: int, selected_seats: list, total_price: f
         for seat_id in selected_seats:
             cursor.execute(assigned_sql, (seat_id, new_order_id, plane_id))
         return new_order_id
+
+
+def update_active_orders_to_completed() -> int:
+    """
+    Fetches all orders with status 'Active', joins with Flight table,
+    and updates orders to 'Completed' status if the current datetime
+    is strictly after the flight's departure datetime.
+    
+    Returns:
+        int: The number of orders updated to 'Completed' status
+    """
+    with get_db_connection() as cursor:
+        try:
+            # Query all Active orders with their flight departure datetime
+            query = """
+                SELECT o.Order_ID, f.Departure_DateTime 
+                FROM `Order` o
+                JOIN Flight f ON o.Flight_ID = f.ID
+                WHERE o.Status = 'Active'
+            """
+            cursor.execute(query)
+            results = cursor.fetchall()
+            
+            if results:
+            
+                current_datetime = datetime.now()
+                
+                # Check each order and update if departure has passed
+                for row in results:
+                    order_id, departure_datetime = row
+                    
+                    # Skip if departure_datetime is None
+                    if departure_datetime is None:
+                        continue
+                    
+                    # Update order if current datetime is strictly after departure datetime
+                    if current_datetime > departure_datetime:
+                        cursor.execute(
+                            "UPDATE `Order` SET Status = 'Completed' WHERE Order_ID = %s",
+                            (order_id)
+                        )
+            
+        except Exception as e:
+            print(f"Database Error during order status update: {e}")
+            return 0
