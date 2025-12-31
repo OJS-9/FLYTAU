@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Summary - FLYTAU</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+    <script>
+        /**
+         * Triggered before the form is submitted to the database.
+         * Ensures the user intentionally wants to create a permanent booking record.
+         */
+        function confirmBooking() {
+            return confirm("Are you sure you want to finalize this booking? This will create a permanent reservation and occupy the selected seats.");
+        }
+    </script>
+</head>
+<body>
+<div class="container">
+    <header class="mb-lg">
+        <h2>Booking Summary</h2>
+        <p class="text-muted">Review your details carefully before confirming your reservation.</p>
+    </header>
+    <hr>
+
+    <div class="summary-section card p-md mb-lg">
+        <h3>1. Flight Details</h3>
+        <p>Route: <strong>{{ flight.origin }} ✈ {{ flight.destination }}</strong></p>
+        <p>Departure: <strong>{{ flight.departure.strftime('%d/%m/%Y %H:%M') }}</strong></p>
+        <p>Flight ID: <strong>#{{ flight.flight_id }}</strong></p>
+
+        <h4 class="mt-md">Selected Seats & Pricing:</h4>
+        <ul class="list-group">
+            {% for seat in seats %}
+            <li class="list-group-item">
+                Seat <strong>{{ seat.row }}{{ seat.letter }}</strong>
+                ({{ seat.type }}) -
+                <span>Position: <strong>{{ seat.location }}</strong></span> |
+                Price: <strong>${{ "{:,.2f}".format(seat.price) }}</strong>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <form action="/finalize_booking" method="POST" class="mt-md" onsubmit="return confirmBooking();">
+
+        <input type="hidden" name="flight_id" value="{{ flight.flight_id }}">
+        <input type="hidden" name="total_price" value="{{ total_price }}">
+        {% for seat in seats %}
+        <input type="hidden" name="seats" value="{{ seat.id }}">
+        {% endfor %}
+
+        <div class="passenger-details-section card p-md mt-lg">
+            <h3>2. Passenger Details</h3>
+            <p class="text-muted">Identification details for this trip.</p>
+
+            <div class="form-group mb-md">
+                <label for="passport_display">Passport Number:</label>
+                <input type="text" id="passport_display" class="form-control" required
+                       placeholder="Enter Passport Number"
+                       value="{{ user_data[0] if user_data and user_data[0] else '' }}"
+                       {{ 'readonly' if user_data and user_data[0] else '' }}>
+            </div>
+
+            <div class="form-group mb-md">
+                <label for="dob_display">Date of Birth:</label>
+                <input type="date" id="dob_display" class="form-control" required
+                       value="{{ user_data[1] if user_data and user_data[1] else '' }}"
+                       {{ 'readonly' if user_data and user_data[1] else '' }}>
+            </div>
+        </div>
+
+        <div class="total-price-section card p-md mt-lg bg-light">
+            <h3 class="mb-md">Grand Total: <span class="text-primary">${{ "{:,.2f}".format(total_price) }}</span></h3>
+
+            <div class="actions mt-md" style="display: flex; gap: 15px;">
+                <a href="{{ url_for('select_seat', flight_id=flight.flight_id) }}" class="btn btn-outline">Back to Seats</a>
+                <button type="submit" class="btn btn-success" style="flex-grow: 1;">Finalize & Confirm Booking</button>
+            </div>
+        </div>
+    </form>
+</div>
+</body>
+</html>

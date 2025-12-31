@@ -116,61 +116,40 @@ def guest_sign_in(email: str) -> None:
         )
 
 
-def search_flights(origin_airport: str, destination_airport: str, departure_date: str) -> List[Dict]:
+def search_flights(origin_airport: str, destination_airport: str, departure_date: str, passengers: int) -> List[Dict]:
     """
-    Search for flights by origin airport, destination airport, and departure date.
-    
-    Parameters:
-        origin_airport: Airport code (e.g., "TLV")
-        destination_airport: Airport code
-        departure_date: Date string in format YYYY-MM-DD
-    
-    Returns:
-        List of dictionaries containing flight details:
-        - flight_id: Flight ID
-        - departure_datetime: Departure date/time
-        - arrival_datetime: Arrival date/time
-        - origin_airport: Origin airport code
-        - destination_airport: Destination airport code
-        - business_seat_price: Business class seat price
-        - economy_seat_price: Economy class seat price
-        - plane_id: Plane ID
+    Search for flights based on origin, destination, date, and required capacity.
+    Uses Class_ID for seat identification in the Assigned table as per the schema.
     """
     with get_db_connection() as cursor:
         cursor.execute(
             """
             SELECT 
-                f.ID,
-                f.Departure_DateTime,
-                f.Arrival_DateTime,
-                f.Path_Origin_Airport,
-                f.Path_Dest_Airport,
-                f.Business_Seat_Price,
-                f.Economy_Seat_Price,
-                f.Plane_ID
+                f.ID, f.Departure_DateTime, f.Arrival_DateTime,
+                f.Path_Origin_Airport, f.Path_Dest_Airport,
+                f.Business_Seat_Price, f.Economy_Seat_Price, f.Plane_ID
             FROM Flight f
             JOIN Plane p ON f.Plane_ID = p.ID
             LEFT JOIN (
                 SELECT 
-                    OCF.Flight_ID,
-                    COUNT(DISTINCT CONCAT(a.Class_ID, '-', a.Plane_ID)) AS booked_seats
+                    o.Flight_ID,
+                    COUNT(a.Class_ID) AS booked_seats
                 FROM Assigned a
                 JOIN `Order` o ON a.Order_ID = o.Order_ID
-                JOIN Order_contains_Flight OCF ON o.Order_ID = OCF.Order_Order_ID
                 WHERE o.Status = 'Active'
-                GROUP BY OCF.Flight_ID
+                GROUP BY o.Flight_ID
             ) seat_counts ON f.ID = seat_counts.Flight_ID
             WHERE f.Path_Origin_Airport = %s
               AND f.Path_Dest_Airport = %s
               AND DATE(f.Departure_DateTime) = %s
-              AND (p.Total_Capacity - COALESCE(seat_counts.booked_seats, 0)) > 0
+              AND (p.Total_Capacity - COALESCE(seat_counts.booked_seats, 0)) >= %s
             ORDER BY f.Departure_DateTime ASC
             """,
-            (origin_airport.upper(), destination_airport.upper(), departure_date),
+            (origin_airport.upper(), destination_airport.upper(), departure_date, passengers),
         )
-        
+
         results = cursor.fetchall()
-        
+
         flights = []
         for row in results:
             flights.append({
@@ -183,70 +162,55 @@ def search_flights(origin_airport: str, destination_airport: str, departure_date
                 "economy_seat_price": row[6],
                 "plane_id": row[7],
             })
-        
-        return flights
 
+        return flights
 
 def get_ticket_details(order_id: int, email: str):
     """
-    Fetches comprehensive booking details including status and total price.
-    Updated to include Total_Price to fix the Jinja2 UndefinedError in the frontend.
+    Fetches ticket details without passenger identity fields (Passport/DOB)
+    as per the requirement to keep the Order table structure original.
     """
     with get_db_connection() as cursor:
-        # SQL Query includes all necessary fields for the management UI
         query = """
             SELECT 
-                o.Order_ID, 
-                f.Path_Origin_Airport, 
-                f.Path_Dest_Airport, 
-                f.Departure_DateTime,
-                a.Class_ID,
-                o.Status,
-                o.Total_Price
+                o.Order_ID, f.Path_Origin_Airport, f.Path_Dest_Airport, f.Departure_DateTime,
+                GROUP_CONCAT(CONCAT(c.Row_Num, c.Column_Letter) SEPARATOR ', ') as Seats,
+                o.Status, o.Total_Price
             FROM `Order` o
-            LEFT JOIN Order_contains_Flight ocf ON o.Order_ID = ocf.Order_Order_ID
-            LEFT JOIN Flight f ON ocf.Flight_ID = f.ID
+            JOIN Flight f ON o.Flight_ID = f.ID
             LEFT JOIN Assigned a ON o.Order_ID = a.Order_ID
+            LEFT JOIN CLASS c ON a.Class_ID = c.ID 
             WHERE o.Order_ID = %s AND (o.Guest_Mail = %s OR o.Costumer_Mail = %s)
+            GROUP BY o.Order_ID
         """
         try:
             cursor.execute(query, (order_id, email, email))
             row = cursor.fetchone()
-
             if row:
-                # Mapping the database row to a dictionary for easy template access
                 return {
                     "Ticket_ID": row[0],
-                    "Origin": row[1] if row[1] else "N/A",
-                    "Destination": row[2] if row[2] else "N/A",
+                    "Origin": row[1],
+                    "Destination": row[2],
                     "Departure_Time": row[3].strftime("%Y-%m-%d %H:%M") if row[3] else "TBD",
                     "Seat_ID": row[4] if row[4] else "Not Assigned",
                     "Status": row[5],
-                    "Total_Price": row[6]  # Critical for showing the 5% penalty fee
+                    "Total_Price": row[6]
                 }
             return None
         except Exception as e:
-            print(f"Error fetching ticket details: {e}")
+            print(f"Database Error: {e}")
             return None
 
 def delete_ticket(order_id: int, email: str):
     """
-    Handles the cancellation logic:
-    1. Validates that the cancellation occurs at least 36 hours before departure.
-    2. Updates the order status to 'Costumer Cancelation'.
-    3. Calculates a 5% penalty fee and updates the Total_Price.
-    4. Frees up the assigned seat.
-
-    Returns: (bool, string) -> (Success status, Message for the user)
+    Handles cancellation logic using confirmed Departure_DateTime.
     """
     with get_db_connection() as cursor:
         try:
-            # Fetch flight departure time, current price, and order status
             query = """
                 SELECT f.Departure_DateTime, o.Total_Price, o.Status
                 FROM `Order` o
-                JOIN Order_contains_Flight ocf ON o.Order_ID = ocf.Order_Order_ID
-                JOIN Flight f ON ocf.Flight_ID = f.ID
+                JOIN Flight f ON o.Flight_ID = f.ID
                 WHERE o.Order_ID = %s AND (o.Guest_Mail = %s OR o.Costumer_Mail = %s)
             """
             cursor.execute(query, (order_id, email, email))
@@ -260,28 +224,104 @@ def delete_ticket(order_id: int, email: str):
             if status != 'Active':
                 return False, "This order is already cancelled."
 
-            # Time Logic: Check if current time is at least 36 hours before departure
-            now = datetime.now()
-            if departure_time - now < timedelta(hours=36):
+            # Check if current time is at least 36 hours before departure
+            if departure_time - datetime.now() < timedelta(hours=36):
                 return False, "Cancellation is only allowed up to 36 hours before the flight."
 
-            # Penalty Logic: Calculate 5% of the original price
-            # Converting to float to ensure mathematical precision
             penalty_fee = float(current_price) * 0.05
 
-            # Database Update: Update status/price and remove seat assignment
-            # Update Order table
+            # Update status and price in Order table
             cursor.execute("""
                 UPDATE `Order` 
                 SET Status = 'Costumer Cancelation', Total_Price = %s 
                 WHERE Order_ID = %s
             """, (penalty_fee, order_id))
 
-            # Remove from Assigned table to make the seat available
+            # Free up the seats
             cursor.execute("DELETE FROM Assigned WHERE Order_ID = %s", (order_id,))
 
             return True, f"Order successfully cancelled. A 5% fee (${penalty_fee:.2f}) was charged."
 
         except Exception as e:
             print(f"Database Error during cancellation: {e}")
-            return False, "An internal error occurred. Please try again later."
+            return False, "An internal error occurred."
+
+def get_flight_seat_map(flight_id: int):
+    with get_db_connection() as cursor:
+        query = """
+            SELECT 
+                c.ID AS seat_id,
+                c.Row_Num,
+                c.Column_Letter,
+                c.Type AS class_type,
+                IF(EXISTS(
+                    SELECT 1 
+                    FROM flytau.assigned a
+                    JOIN flytau.`Order` o ON a.Order_ID = o.Order_ID 
+                    WHERE a.Class_ID = c.ID 
+                      AND o.Flight_ID = %s
+                ), 1, 0) AS is_occupied
+            FROM flytau.class c
+            JOIN flytau.Flight f ON f.Plane_ID = c.Plane_ID
+            WHERE f.ID = %s
+            ORDER BY c.Row_Num, c.Column_Letter
+        """
+        cursor.execute(query, (flight_id, flight_id))
+        results = cursor.fetchall()
+
+
+        return [{
+            "seat_id": r[0],
+            "row_num": r[1],
+            "letter": r[2],
+            "class_type": r[3],
+            "is_occupied": bool(r[4])
+        } for r in results]
+
+def get_flight_by_id(flight_id: int) -> Optional[Dict]:
+    """
+    Fetches details for a single flight to be used in the booking summary.
+    """
+    with get_db_connection() as cursor:
+        cursor.execute("""
+            SELECT ID, Departure_DateTime, Path_Origin_Airport, Path_Dest_Airport, 
+                   Business_Seat_Price, Economy_Seat_Price 
+            FROM Flight WHERE ID = %s
+        """, (flight_id,))
+        row = cursor.fetchone()
+        if row:
+            return {
+                "flight_id": row[0],
+                "departure": row[1],
+                "origin": row[2],
+                "destination": row[3],
+                "business_price": row[4],
+                "economy_price": row[5]
+            }
+        return None
+
+
+def create_order_with_seats(flight_id: int, selected_seats: list, total_price: float,
+                            customer_mail: str = None, guest_mail: str = None) -> int:
+    """
+    Creates a new order record.
+    Note: Passport and DOB are NOT saved here anymore to comply with table constraints.
+    """
+    with get_db_connection() as cursor:
+        cursor.execute("SELECT Plane_ID FROM Flight WHERE ID = %s", (flight_id,))
+        plane_result = cursor.fetchone()
+        if not plane_result: raise Exception(f"Flight ID {flight_id} not found.")
+        plane_id = plane_result[0]
+
+        # SQL query back to original 6-column structure
+        order_sql = """
+            INSERT INTO `Order` (Status, Order_Date, Total_Price, Flight_ID, Costumer_Mail, Guest_Mail)
+            VALUES ('Active', NOW(), %s, %s, %s, %s)
+        """
+        cursor.execute(order_sql, (total_price, flight_id, customer_mail, guest_mail))
+        new_order_id = cursor.lastrowid
+
+        assigned_sql = "INSERT INTO Assigned (Class_ID, Order_ID, Plane_ID) VALUES (%s, %s, %s)"
+        for seat_id in selected_seats:
+            cursor.execute(assigned_sql, (seat_id, new_order_id, plane_id))
+        return new_order_id

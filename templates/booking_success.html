@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Booking Confirmed - FLYTAU</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .success-container {
+            text-align: center;
+            margin-top: 100px;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            background-color: white;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .order-id {
+            font-size: 1.5em;
+            color: #2c3e50;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .btn-dashboard {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="success-container">
+        <h1 style="color: #27ae60;">✔️ Booking Successful!</h1>
+        <p>Thank you for choosing to fly with <strong>FLYTAU</strong>.</p>
+
+        <div class="order-id">
+            Order ID: #{{ order_id }}
+        </div>
+
+        <p>Your seats have been reserved and your details are secured.</p>
+
+        <a href="{{ url_for(target_dashboard) }}" class="btn-dashboard">Go to My Dashboard</a>
+    </div>
+</body>
+</html>

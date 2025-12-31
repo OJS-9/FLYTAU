@@ -1,14 +1,7 @@
-from flask import Flask, render_template, request, redirect, session, jsonify, url_for
+from flask import Flask, render_template, request, redirect, session, jsonify, url_for, flash
 from flask_session import Session
 from datetime import timedelta, datetime
-from utils import (
-    get_customer_by_email_and_password,
-    get_manager_by_id_and_password,
-    customer_email_exists,
-    create_customer_with_phones,
-    guest_sign_in,
-    search_flights,
-)
+from utils import *
 
 app = Flask(__name__)
 
@@ -269,30 +262,28 @@ def logout():
 def search_flights_route():
     """
     Handle flight search requests via AJAX.
-    Validates user is logged in as customer, validates inputs, and returns JSON results.
+    Validates user is logged in, validates inputs, and filters results
+    based on the plane's remaining capacity for all requested passengers.
     """
-    # Check if user is logged in as customer or guest
+    # 1. Check if user is logged in as customer or guest
     user_type = session.get("user_type")
     if user_type not in ["customer", "guest"]:
         return jsonify({"error": "You must be signed in (as guest or customer) to search flights."}), 401
-    # Extract and validate form data
+
+    # 2. Extract form data
     origin_airport = request.form.get("origin_airport", "").strip().upper()
     destination_airport = request.form.get("destination_airport", "").strip().upper()
     departure_date = request.form.get("departure_date", "").strip()
     passengers = request.form.get("passengers", "1").strip()
 
-    # Python validation
+    # 3. Server-side validation
     errors = []
 
-    if not origin_airport:
-        errors.append("Origin airport is required.")
-    elif len(origin_airport) != 3:
-        errors.append("Origin airport must be a 3-letter code.")
+    if not origin_airport or len(origin_airport) != 3:
+        errors.append("Origin airport must be a valid 3-letter code.")
 
-    if not destination_airport:
-        errors.append("Destination airport is required.")
-    elif len(destination_airport) != 3:
-        errors.append("Destination airport must be a 3-letter code.")
+    if not destination_airport or len(destination_airport) != 3:
+        errors.append("Destination airport must be a valid 3-letter code.")
 
     if origin_airport and destination_airport and origin_airport == destination_airport:
         errors.append("Origin and destination airports must be different.")
@@ -301,69 +292,59 @@ def search_flights_route():
         errors.append("Departure date is required.")
     else:
         try:
-            # Validate date format
             date_obj = datetime.strptime(departure_date, "%Y-%m-%d")
-            # Check if date is not in the past
             if date_obj.date() < datetime.now().date():
                 errors.append("Departure date cannot be in the past.")
         except ValueError:
             errors.append("Invalid date format. Please use YYYY-MM-DD.")
 
+    # 4. Handle passenger count and session storage
     try:
         passengers_int = int(passengers)
         if passengers_int < 1 or passengers_int > 9:
             errors.append("Number of passengers must be between 1 and 9.")
+        else:
+            # Store passenger count in session for the seat selection logic
+            session['passengers'] = passengers_int
+            session["search_passengers"] = passengers_int
     except ValueError:
         errors.append("Number of passengers must be a valid number.")
 
     if errors:
         return jsonify({"error": " ".join(errors)}), 400
 
-    # Save passengers count (for future use, not used in search yet)
-    session["search_passengers"] = passengers_int
-
+    # 5. Execute search using the updated schema (direct Flight_ID in Order table)
     try:
-        # Call search function
-        flights = search_flights(origin_airport, destination_airport, departure_date)
+        # Pass passengers_int to ensure the flight has enough free seats
+        flights = search_flights(origin_airport, destination_airport, departure_date, passengers_int)
+
+        # Return results to be rendered on the client side
         return jsonify({"flights": flights, "count": len(flights)})
+
     except Exception as e:
-        # In a real app, log the error
+        # Log the internal error and return a generic user-friendly message
+        print(f"Database Error: {e}")
         return jsonify({"error": "An error occurred while searching for flights. Please try again."}), 500
 
-
-@app.route("/manage_reservations", methods=["GET"])
+@app.route("/manage_reservations")
 def manage_reservations():
-    """
-    Unified route to view order details.
-    Converts order_id to integer to match SQL schema.
-    """
-    order_id_raw = request.args.get("order_id")
-    user_type = session.get("user_type")
+    order_id = request.args.get('order_id')
+    email = session.get('user_email') or session.get('guest_email')
 
-    # Get the correct email from the session based on login type
-    identifier = session.get("guest_email") if user_type == "guest" else session.get("user_email")
+    if not order_id or not email:
+        flash("Please provide a valid Order ID.")
+        return redirect(url_for('guest_dashboard'))
 
-    if not order_id_raw or not identifier:
-        return redirect("/")
+    # Fetch details using the updated logic from utils.py
+    ticket = get_ticket_details(int(order_id), email)
 
-    try:
-        from utils import get_ticket_details
-        # CRITICAL: Convert to int because DB schema uses INT for Order_ID
-        order_id = int(order_id_raw)
+    if not ticket:
+        # If no ticket is found for this email, flash an alert
+        flash(f"Order #{order_id} is not associated with your account.")
+        return redirect(url_for('guest_dashboard'))
 
-        order_details = get_ticket_details(order_id, identifier)
-
-        if not order_details:
-            # Stay on current dashboard if not found
-            target = "guest.html" if user_type == "guest" else "user_dashboard.html"
-            return render_template(target, error="Order not found or unauthorized for your email.")
-
-        return render_template("manage_order.html", order=order_details)
-
-    except (ValueError, TypeError):
-        # Handles cases where order_id is not a number
-        return redirect("/")
-
+    # Instead of a new HTML, we return the same dashboard but with the 'ticket' data
+    return render_template("guest.html", ticket=ticket, show_manage=True)
 
 @app.route("/cancel_order", methods=["POST"])
 def cancel_order_route():
@@ -372,7 +353,6 @@ def cancel_order_route():
     email = session.get("guest_email") if user_type == "guest" else session.get("user_email")
 
     if order_id and email:
-        from utils import delete_ticket
         # Receiving both values from the utility function
         success, message = delete_ticket(int(order_id), email)
 
@@ -381,14 +361,142 @@ def cancel_order_route():
             return redirect(url_for('manage_reservations', order_id=order_id))
         else:
             # If failed (e.g. < 36h), we can pass the message back to the page
-            from utils import get_ticket_details
             order_data = get_ticket_details(int(order_id), email)
             return render_template("manage_order.html", order=order_data, error_message=message)
 
     return "Invalid Request", 400
 
 
+@app.route("/select_seat")
+def select_seat():
+    fid_raw = request.args.get('flight_id')
+    if not fid_raw:
+        return redirect('/')
 
+    flight_id = int(fid_raw)  # המרה קריטית!
+    max_seats = int(session.get('passengers', 1))
+
+    seats_data = get_flight_seat_map(flight_id)
+
+    return render_template("select_seat.html",
+                           seats=seats_data,
+                           flight_id=flight_id,
+                           max_seats=max_seats)
+
+
+@app.route("/booking_summary", methods=["POST"])
+def booking_summary():
+    """
+    Summarizes the booking details.
+    NOTE: We still fetch Passport/DOB from the 'Costumer' table to pre-fill the form
+    for UI/UX purposes, even though we won't save this info in the 'Order' table.
+    """
+    selected_seats = request.form.getlist('selected_seats')
+    flight_id = request.form.get('flight_id')
+    max_seats = session.get('passengers', 1)
+
+    # 1. Validation
+    if not selected_seats or len(selected_seats) != int(max_seats):
+        flash(f"Error: You must select exactly {max_seats} seats.")
+        return redirect(url_for('select_seat', flight_id=flight_id))
+
+    # 2. Get flight details
+    flight = get_flight_by_id(int(flight_id))
+    if not flight:
+        flash("Error: Flight details could not be retrieved.")
+        return redirect(url_for('search_flights_route'))
+
+    # 3. Dynamic Price Calculation
+    total_price = 0
+    seat_details = []
+    try:
+        with get_db_connection() as cursor:
+            format_strings = ','.join(['%s'] * len(selected_seats))
+            query = f"SELECT ID, Type, Row_Num, Column_Letter, Seat_Type FROM class WHERE ID IN ({format_strings})"
+            cursor.execute(query, tuple(selected_seats))
+            seats_from_db = cursor.fetchall()
+
+            for row in seats_from_db:
+                seat_id, class_type, row_num, col_letter, seat_location = row
+                price = float(flight['business_price']) if class_type.lower() == 'business' else float(flight['economy_price'])
+                total_price += price
+                seat_details.append({
+                    "id": seat_id, "type": class_type, "row": row_num,
+                    "letter": col_letter, "location": seat_location, "price": price
+                })
+    except Exception as e:
+        print(f"Database Error: {e}")
+        return redirect(url_for('select_seat', flight_id=flight_id))
+
+    # 4. PRE-FILL LOGIC: Fetch from 'Costumer' table to show on screen
+    # This data is passed to the HTML but will NOT be saved to the 'Order' table later.
+    user_data = None
+    if session.get("user_type") == "customer":
+        email = session.get("user_email")
+        with get_db_connection() as cursor:
+            cursor.execute("SELECT Passport_Num, B_Date FROM Costumer WHERE Mail = %s", (email,))
+            user_data = cursor.fetchone()
+
+    return render_template("booking_summary.html",
+                           seats=seat_details,
+                           flight=flight,
+                           total_price=total_price,
+                           user_data=user_data,
+                           is_guest=(session.get("user_type") == "guest"))
+
+
+@app.route("/finalize_booking", methods=["POST"])
+def finalize_booking():
+    """
+    Finalizes the booking.
+    Removed passport_num and b_date from the create_order_with_seats call
+    to match the original database schema.
+    """
+    flight_id = request.form.get('flight_id')
+    selected_seats = request.form.getlist('seats')
+    total_price = request.form.get('total_price')
+
+    user_type = session.get('user_type')
+    customer_mail = session.get('user_email') if user_type == 'customer' else None
+    guest_mail = session.get('guest_email') if user_type == 'guest' else None
+
+    # Integrity check
+    if not selected_seats or not flight_id:
+        flash("Booking data is missing.")
+        return redirect(url_for('home'))
+
+    try:
+        # NOTICE: We do NOT pass passport/dob here anymore.
+        # We only pass the fields that exist in your original 'Order' table.
+        new_order_id = create_order_with_seats(
+            flight_id=int(flight_id),
+            selected_seats=selected_seats,
+            total_price=float(total_price),
+            customer_mail=customer_mail,
+            guest_mail=guest_mail
+        )
+
+        target_dashboard = 'user_dashboard' if user_type == 'customer' else 'guest_dashboard'
+        return render_template("booking_success.html",
+                               order_id=new_order_id,
+                               target_dashboard=target_dashboard)
+
+    except Exception as e:
+        print(f"DATABASE TRANSACTION ERROR: {e}")
+        flash("We could not process your booking. Please try again.")
+        return redirect(url_for('home'))
+
+@app.route('/manage_orders')
+def manage_orders():
+    return "Manage Orders Page - Coming Soon"
+
+@app.route('/manage_flights')
+def manage_flights():
+    return "Manage Flights Page - Coming Soon"
+
+@app.route('/view_reports')
+def view_reports():
+    return "Management Reports - Coming Soon"
 
 if __name__ == "__main__":
     app.run(debug=True)

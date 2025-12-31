@@ -6,12 +6,42 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <style>
         .hidden { display: none !important; }
+        /* Styling for the ticket result display */
+        .ticket-info-box {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background-color: #f9fafb;
+        }
+        .ticket-header {
+            border-bottom: 2px solid var(--color-primary);
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+        }
+        .cancel-warning {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 15px;
+            border: 1px solid #fecaca;
+        }
     </style>
 </head>
 <body>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <script>
+          {% for message in messages %}
+            alert("{{ message }}");
+          {% endfor %}
+        </script>
+      {% endif %}
+    {% endwith %}
+
     <main class="container">
 
-        {# שלב 1: אם אין אימייל ב-Session, מציגים רק את טופס ההרשמה #}
         {% if not session.get('guest_email') %}
         <section class="card mt-xl m-auto" style="max-width: 480px;">
             <div class="card-header">
@@ -29,25 +59,17 @@
                     </div>
                     <button type="submit" class="btn btn-primary w-100 mt-md">Continue to Flights</button>
                 </form>
-                <div class="text-center mt-md">
-                    <a href="{{ url_for('login') }}" class="text-muted small">Back to Member Login</a>
-                </div>
             </div>
         </section>
 
-        {# שלב 2: אם האורח רשום, מציגים את הדשבורד עם ה-Tabs #}
         {% else %}
         <nav class="flight-nav">
-            <a href="javascript:void(0)" id="tab-book" class="flight-nav-item active" onclick="showTab('book')">Book A Flight</a>
-            <a href="javascript:void(0)" id="tab-manage" class="flight-nav-item" onclick="showTab('manage')">My Booking</a>
+            <a href="javascript:void(0)" id="tab-book" class="flight-nav-item {{ 'active' if not show_manage else '' }}" onclick="showTab('book')">Book A Flight</a>
+            <a href="javascript:void(0)" id="tab-manage" class="flight-nav-item {{ 'active' if show_manage else '' }}" onclick="showTab('manage')">My Booking</a>
             <a href="{{ url_for('logout') }}" class="flight-nav-item" style="margin-left: auto; color: #dc2626;">Logout ({{ session.get('guest_email') }})</a>
         </nav>
 
-        {% if error %}
-            <div class="alert alert-error mt-md">{{ error }}</div>
-        {% endif %}
-
-        <section id="section-book" class="card mt-xl">
+        <section id="section-book" class="card mt-xl {{ 'hidden' if show_manage else '' }}">
             <div class="card-header">
                 <h1 class="card-title">Welcome, Guest!</h1>
                 <p class="text-muted">Search for flights to book your next trip.</p>
@@ -57,7 +79,7 @@
                     <div class="flight-search-fields">
                         <div class="flight-field">
                             <label for="origin_airport">Origin</label>
-                            <input type="text" id="origin_airport" name="origin_airport" placeholder="TLV" maxlength="3" required>
+                            <input type="text" id="origin_airport" name="origin_airport" placeholder="TLV" class="airport-input" required>
                         </div>
                         <div class="flight-path-icon">
                             <svg width="60" height="40" viewBox="0 0 60 40">
@@ -67,7 +89,7 @@
                         </div>
                         <div class="flight-field">
                             <label for="destination_airport">Where to?</label>
-                            <input type="text" id="destination_airport" name="destination_airport" placeholder="Destination" maxlength="3" required>
+                            <input type="text" id="destination_airport" name="destination_airport" placeholder="Where to?" class="airport-input" required>
                         </div>
                         <div class="flight-field">
                             <label for="departure_date">Departure</label>
@@ -75,18 +97,22 @@
                         </div>
                         <div class="flight-field">
                             <label for="passengers">Passenger</label>
-                            <input type="number" id="passengers" name="passengers" value="1" min="1" max="9" required>
+                            <div class="passenger-selector">
+                                <input type="number" id="passengers" name="passengers" value="1" min="1" max="9" class="passenger-input" required>
+                                <span class="seat-icon">🪑</span>
+                                <span class="dropdown-chevron">▼</span>
+                            </div>
                         </div>
                     </div>
                     <div class="flight-search-actions">
                         <button type="submit" class="btn btn-primary">Search Flights</button>
                     </div>
                 </form>
-                <div id="search-results" class="search-results hidden mt-lg"></div>
+                <div id="search-results" class="search-results hidden"></div>
             </div>
         </section>
 
-        <section id="section-manage" class="card mt-xl hidden">
+        <section id="section-manage" class="card mt-xl {{ '' if show_manage else 'hidden' }}">
             <div class="card-header">
                 <h1 class="card-title">Find Your Reservation</h1>
                 <p class="text-muted">Enter your Order ID to view or cancel your booking.</p>
@@ -95,75 +121,104 @@
                 <form action="{{ url_for('manage_reservations') }}" method="GET" style="max-width: 400px;">
                     <div class="form-group">
                         <label for="order_id">Order ID</label>
-                        <input type="number" id="order_id" name="order_id" placeholder="Enter Order ID" required>
+                        <input type="number" id="order_id" name="order_id" required>
                     </div>
                     <button type="submit" class="btn btn-secondary w-100 mt-md">View My Order</button>
                 </form>
+
+                {% if ticket %}
+                <div class="ticket-info-box">
+                    <div class="ticket-header">
+                        <h3>Reservation Details: #{{ ticket.Ticket_ID }}</h3>
+                    </div>
+
+                    {% if ticket.Status == 'Costumer Cancelation' %}
+                    <div class="cancel-warning">
+                        <strong>Order Cancelled:</strong> This booking has been cancelled and a 5% fee was applied.
+                    </div>
+                    {% endif %}
+
+                    <div class="ticket-details">
+                        <p><strong>Route:</strong> {{ ticket.Origin }} → {{ ticket.Destination }}</p>
+                        <p><strong>Departure Time:</strong> {{ ticket.Departure_Time }}</p>
+                        <p><strong>Seats Assigned:</strong> {{ ticket.Seat_ID }}</p>
+                        <p><strong>Booking Status:</strong> <span class="badge">{{ ticket.Status }}</span></p>
+                        <p><strong>Total Price:</strong> ${{ ticket.Total_Price }}</p>
+                    </div>
+
+                    <div class="mt-md" style="display: flex; gap: 10px;">
+                        {% if ticket.Status == 'Active' %}
+                        <form action="{{ url_for('cancel_order_route') }}" method="POST" onsubmit="return confirm('Confirm cancellation? A 5% penalty applies.');">
+                            <input type="hidden" name="order_id" value="{{ ticket.Ticket_ID }}">
+                            <button type="submit" class="btn btn-danger btn-sm">Cancel Booking</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </section>
         {% endif %}
     </main>
 
     <script>
-        // לוגיקת החלפת הטאבים
+        /**
+         * Toggles visibility between Booking and Management sections
+         */
         function showTab(tabName) {
-            const bookSection = document.getElementById('section-book');
-            const manageSection = document.getElementById('section-manage');
-            const bookTab = document.getElementById('tab-book');
-            const manageTab = document.getElementById('tab-manage');
-
-            if (tabName === 'book') {
-                bookSection.classList.remove('hidden');
-                manageSection.classList.add('hidden');
-                bookTab.classList.add('active');
-                manageTab.classList.remove('active');
-            } else {
-                manageSection.classList.remove('hidden');
-                bookSection.classList.add('hidden');
-                manageTab.classList.add('active');
-                bookTab.classList.remove('active');
-            }
+            document.getElementById('section-book').classList.toggle('hidden', tabName !== 'book');
+            document.getElementById('section-manage').classList.toggle('hidden', tabName !== 'manage');
+            document.getElementById('tab-book').classList.toggle('active', tabName === 'book');
+            document.getElementById('tab-manage').classList.toggle('active', tabName === 'manage');
         }
 
-        // לוגיקת חיפוש הטיסות (AJAX)
-        const searchForm = document.getElementById('flight-search-form');
-        if (searchForm) {
-            searchForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const resultsDiv = document.getElementById('search-results');
-                resultsDiv.classList.remove('hidden');
-                resultsDiv.innerHTML = '<p class="text-muted">Searching for flights...</p>';
+        /**
+         * AJAX search logic for finding flights
+         */
+        document.getElementById('flight-search-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const resultsDiv = document.getElementById('search-results');
+            resultsDiv.classList.remove('hidden');
+            resultsDiv.innerHTML = '<p class="text-muted">Searching...</p>';
 
-                try {
-                    const response = await fetch('/search_flights', {
-                        method: 'POST',
-                        body: new FormData(this)
+            try {
+                const response = await fetch('/search_flights', {
+                    method: 'POST',
+                    body: new FormData(this)
+                });
+                const data = await response.json();
+
+                if (data.error) {
+                    resultsDiv.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+                } else if (data.flights && data.flights.length > 0) {
+                    let html = '<h3>Search Results</h3><div class="flight-results-list">';
+                    data.flights.forEach(flight => {
+                        html += `
+                            <div class="flight-result-card">
+                                <div class="flight-route">
+                                    <span class="airport-code-large">${flight.origin_airport}</span>
+                                    <span class="flight-arrow">→</span>
+                                    <span class="airport-code-large">${flight.destination_airport}</span>
+                                </div>
+                                <div class="flight-details">
+                                    <p><strong>Departure:</strong> ${flight.departure_datetime}</p>
+                                    <p><strong>Arrival:</strong> ${flight.arrival_datetime}</p>
+                                    <p><strong>Economy:</strong> $${flight.economy_seat_price}</p>
+                                    <p><strong>Business:</strong> $${flight.business_seat_price}</p>
+                                    <button class="btn btn-primary btn-sm" onclick="location.href='/select_seat?flight_id=${flight.flight_id}'">Select</button>
+                                </div>
+                            </div>
+                        `;
                     });
-                    const data = await response.json();
-                    if (data.error) {
-                        resultsDiv.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
-                    } else if (data.flights && data.flights.length > 0) {
-                        let html = '<h3 class="mb-md">Search Results</h3><div class="flight-results-list">';
-                        data.flights.forEach(f => {
-                            html += `
-                                <div class="flight-result-card" style="border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-                                    <div>
-                                        <div style="font-weight: bold;">${f.origin_airport} &rarr; ${f.destination_airport}</div>
-                                        <div class="text-muted small">${f.departure_datetime}</div>
-                                    </div>
-                                    <button class="btn btn-primary btn-sm" onclick="location.href='/select_seat?flight_id=${f.flight_id}'">Select</button>
-                                </div>`;
-                        });
-                        html += '</div>';
-                        resultsDiv.innerHTML = html;
-                    } else {
-                        resultsDiv.innerHTML = '<p class="text-muted">No flights found.</p>';
-                    }
-                } catch (err) {
-                    resultsDiv.innerHTML = '<div class="alert alert-error">Error communicating with server.</div>';
+                    html += '</div>';
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = '<p class="text-muted">No flights found.</p>';
                 }
-            });
-        }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="alert alert-error">An error occurred during search.</div>`;
+            }
+        });
     </script>
 </body>
 </html>
