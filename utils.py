@@ -380,3 +380,40 @@ def get_employee_hours_report() -> List[Dict]:
             })
 
         return report_data
+
+
+def get_flight_occupancy_report() -> List[Dict]:
+    with get_db_connection() as cursor:
+        query = """
+            SELECT 
+                f.ID,
+                CONCAT(f.Path_Origin_Airport, '-', f.Path_Dest_Airport) AS Route,
+                DATE_FORMAT(f.Departure_DateTime, '%d/%m/%Y') AS Flight_Date,
+                COUNT(a.Order_ID) AS Passengers_Count,
+                (p.Economy_Capacity + p.Business_Capacity) AS Total_Seats,
+                ROUND((COUNT(a.Order_ID) / (p.Economy_Capacity + p.Business_Capacity)) * 100, 2) AS Occupancy_Percentage
+            FROM flight f
+            JOIN plane p ON f.Plane_ID = p.ID
+            JOIN `order` o ON f.ID = o.Flight_ID
+            JOIN assigned a ON o.Order_ID = a.Order_ID 
+            WHERE f.Departure_DateTime < NOW() 
+              AND o.Status = 'Completed'
+            GROUP BY f.ID, p.Economy_Capacity, p.Business_Capacity
+            ORDER BY f.Departure_DateTime DESC
+            LIMIT 10;
+        """
+        cursor.execute(query)
+        results = cursor.fetchall()
+
+        report_data = []
+        for row in results:
+            label = f"{row[1]}\n({row[2]})"
+
+            report_data.append({
+                "flight_label": label,
+                "passengers": row[3],
+                "capacity": row[4],
+                "percentage": float(row[5]) if row[5] is not None else 0
+            })
+
+        return report_data

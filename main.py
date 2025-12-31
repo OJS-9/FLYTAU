@@ -548,6 +548,55 @@ def report_employee_hours():
                            chart_url=plot_url)
 
 
+@app.route('/reports/flight_occupancy')
+def report_flight_occupancy():
+    if session.get("user_type") != "manager":
+        return redirect("/login")
+
+    try:
+        data = get_flight_occupancy_report()
+    except Exception as e:
+        print(f"Error fetching report: {e}")
+        data = []
+
+    if not data:
+        return render_template("report_display.html",
+                               report_title="Average Flight Occupancy",
+                               chart_url=None)
+
+    labels = [row['flight_label'] for row in data]
+    percentages = [row['percentage'] for row in data]
+
+    plt.figure(figsize=(10, 6))
+
+    bars = plt.bar(labels, percentages, color='#1ABC9C', label='Occupancy %')
+
+    plt.axhline(y=100, color='r', linestyle='--', label='Full Capacity (100%)', alpha=0.7)
+
+    plt.ylabel('Occupancy Percentage (%)')
+    plt.title('Average Occupancy per Completed Flight')
+    plt.ylim(0, 110)
+    plt.legend()
+    plt.grid(axis='y', linestyle='--', alpha=0.5)
+
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width() / 2., height,
+                 f'{height}%',
+                 ha='center', va='bottom')
+
+    plt.tight_layout()
+
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plot_url = base64.b64encode(img.getvalue()).decode()
+    plt.close()
+
+    return render_template("report_display.html",
+                           report_title="Average Flight Occupancy",
+                           chart_url=plot_url)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
