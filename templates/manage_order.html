@@ -13,7 +13,7 @@
             {% if session.get('user_type') == 'guest' %}
                 <a href="{{ url_for('guest_dashboard') }}" class="flight-nav-item">Return to Dashboard</a>
             {% elif session.get('user_type') == 'customer' %}
-                <a href="{{ url_for('customer_dashboard') }}" class="flight-nav-item">Return to Dashboard</a>
+                <a href="{{ url_for('user_dashboard') }}" class="flight-nav-item">Return to Dashboard</a>
             {% else %}
                 <a href="/" class="flight-nav-item">Return Home</a>
             {% endif %}
@@ -21,13 +21,23 @@
 
         <section class="card mt-xl m-auto" style="max-width: 700px;">
 
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                    <div style="background-color: #fef2f2; border: 1px solid #ef4444; color: #b91c1c; padding: 15px; text-align: center; border-radius: 8px; margin: 10px;">
+                        <strong>Error:</strong> {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
             {% if error_message %}
             <div style="background-color: #fef2f2; border: 1px solid #ef4444; color: #b91c1c; padding: 15px; text-align: center; border-radius: 8px; margin: 10px;">
                 <strong>Error:</strong> {{ error_message }}
             </div>
             {% endif %}
 
-            {% if order.Status != 'Active' %}
+            {% if order.Status == 'Costumer Cancelation' %}
             <div style="background-color: #fee2e2; border-bottom: 2px solid #ef4444; color: #b91c1c; padding: 20px; text-align: center; font-weight: bold; border-radius: 12px 12px 0 0;">
                 ATTENTION: THIS RESERVATION IS CANCELLED
                 <div style="font-size: 1rem; font-weight: normal; margin-top: 5px;">
@@ -39,11 +49,11 @@
             <div class="card-header border-bottom">
                 <h1 class="card-title">Reservation Summary</h1>
                 <p class="text-muted">Booking Reference: <strong>#{{ order.Ticket_ID }}</strong></p>
-                <p class="small">Status: <span style="color: {{ 'green' if order.Status == 'Active' else 'red' }}">{{ order.Status }}</span></p>
+                <p class="small">Status: <span style="color: {{ 'red' if order.Status == 'Costumer Cancelation' else 'green' }}">{{ order.Status }}</span></p>
             </div>
 
             <div class="card-body">
-                <div class="booking-details-container" style="background: var(--color-background); border: 1px solid #eef2f6; border-radius: 12px; padding: 24px; {% if order.Status != 'Active' %} opacity: 0.6; {% endif %}">
+                <div class="booking-details-container" style="background: var(--color-background); border: 1px solid #eef2f6; border-radius: 12px; padding: 24px; {% if order.Status == 'Costumer Cancelation' %} opacity: 0.6; {% endif %}">
 
                     <div style="margin-bottom: 20px;">
                         <label class="text-muted small" style="text-transform: uppercase; letter-spacing: 1px;">Passenger Account</label>
@@ -73,25 +83,25 @@
                         </div>
                         <div style="text-align: right;">
                             <span class="text-muted small">SEAT</span>
-                            <div style="font-weight: 600; color: var(--color-primary);">{{ order.Seat_ID if order.Status == 'Active' else 'Released' }}</div>
+                            <div style="font-weight: 600; color: var(--color-primary);">{{ 'Released' if order.Status == 'Costumer Cancelation' else order.Seat_ID }}</div>
                         </div>
                     </div>
                 </div>
 
                 <div style="margin-top: 30px; display: flex; gap: 15px;">
-                    {% if order.Status == 'Active' %}
+                    {% if order.Status == 'Costumer Cancelation' %}
+                        <button disabled class="btn btn-secondary" style="flex: 2; cursor: not-allowed; opacity: 0.5;">Reservation Cancelled</button>
+                    {% else %}
                         <form action="{{ url_for('cancel_order_route') }}" method="POST" style="flex: 2;" onsubmit="return confirm('Confirm cancellation? 5% fee applies and 36h limit check will be performed.');">
                             <input type="hidden" name="order_id" value="{{ order.Ticket_ID }}">
-                            <button type="submit" class="btn btn-danger w-100" style="padding: 12px;">Cancel Reservation</button>
+                            <button type="submit" class="btn btn-danger w-100" style="padding: 12px; background-color: #dc3545; border-color: #dc3545; color: white;">Cancel Reservation</button>
                         </form>
-                    {% else %}
-                        <button disabled class="btn btn-secondary" style="flex: 2; cursor: not-allowed; opacity: 0.5;">Reservation Cancelled</button>
                     {% endif %}
 
                     {% if session.get('user_type') == 'guest' %}
                         <a href="{{ url_for('guest_dashboard') }}" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;">Back</a>
                     {% elif session.get('user_type') == 'customer' %}
-                        <a href="{{ url_for('customer_dashboard') }}" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;">Back</a>
+                        <a href="{{ url_for('user_dashboard') }}" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;">Back</a>
                     {% else %}
                         <a href="/" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;">Back</a>
                     {% endif %}
