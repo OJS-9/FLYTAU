@@ -49,11 +49,11 @@
             <div class="card-header border-bottom">
                 <h1 class="card-title">Reservation Summary</h1>
                 <p class="text-muted">Booking Reference: <strong>#{{ order.Ticket_ID }}</strong></p>
-                <p class="small">Status: <span style="color: {{ 'red' if order.Status == 'Costumer Cancelation' else 'green' }}">{{ order.Status }}</span></p>
+                <p class="small">Status: <span class="{% if order.Status == 'Costumer Cancelation' %}text-error{% else %}text-success{% endif %}">{{ order.Status }}</span></p>
             </div>
 
             <div class="card-body">
-                <div class="booking-details-container" style="background: var(--color-background); border: 1px solid #eef2f6; border-radius: 12px; padding: 24px; {% if order.Status == 'Costumer Cancelation' %} opacity: 0.6; {% endif %}">
+                <div class="booking-details-container {% if order.Status == 'Costumer Cancelation' %}opacity-reduced{% endif %}" style="background: var(--color-background); border: 1px solid #eef2f6; border-radius: 12px; padding: 24px;">
 
                     <div style="margin-bottom: 20px;">
                         <label class="text-muted small" style="text-transform: uppercase; letter-spacing: 1px;">Passenger Account</label>
