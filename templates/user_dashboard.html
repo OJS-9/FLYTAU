@@ -124,11 +124,25 @@
         <div class="card-body">
           <!-- Order History Section -->
           <div class="order-history-section" style="margin-bottom: 2rem;">
-            <h2 style="margin-bottom: 1rem;">Order History</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h2 style="margin: 0;">Order History</h2>
+              {% if order_history and order_history|length > 0 %}
+                <div class="form-group" style="margin: 0; max-width: 250px;">
+                  <label for="status-filter" style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: #6b7280;">Filter by Status</label>
+                  <select id="status-filter" class="form-control" style="width: 100%; padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 4px; font-size: 0.9rem;">
+                    <option value="all">All Orders</option>
+                    <option value="Active">Active</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Costumer Cancelation">Costumer Cancelation</option>
+                    <option value="System Cancelation">System Cancelation</option>
+                  </select>
+                </div>
+              {% endif %}
+            </div>
             {% if order_history and order_history|length > 0 %}
               <div class="order-history-list">
                 {% for order in order_history %}
-                  <div class="order-history-card" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background-color: #f9fafb;">
+                  <div class="order-history-card" data-status="{{ order.Status }}" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background-color: #f9fafb;">
                     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
                       <div>
                         <h3 style="margin: 0; font-size: 1.1rem; color: #1f2937;">Order #{{ order.Ticket_ID }}</h3>
@@ -138,6 +152,7 @@
                         {% if order.Status == 'Completed' %}background-color: #d1fae5; color: #065f46;
                         {% elif order.Status == 'Costumer Cancelation' %}background-color: #fee2e2; color: #991b1b;
                         {% elif order.Status == 'System Cancelation' %}background-color: #fef3c7; color: #92400e;
+                        {% elif order.Status == 'Active' %}background-color: #dbeafe; color: #1e40af;
                         {% else %}background-color: #e5e7eb; color: #374151;{% endif %}">
                         {{ order.Status }}
                       </span>
@@ -166,10 +181,13 @@
                 {% endfor %}
               </div>
             {% else %}
-              <p class="text-muted" style="padding: 2rem; text-align: center; background-color: #f9fafb; border-radius: 8px;">
+              <p id="empty-state-message" class="text-muted" style="padding: 2rem; text-align: center; background-color: #f9fafb; border-radius: 8px;">
                 No order history found. Your completed and cancelled orders will appear here.
               </p>
             {% endif %}
+            <p id="filtered-empty-state" class="text-muted hidden" style="padding: 2rem; text-align: center; background-color: #f9fafb; border-radius: 8px;">
+              No orders found with the selected status filter.
+            </p>
           </div>
 
           <!-- Find Specific Order Section -->
@@ -195,6 +213,48 @@
         document.getElementById('tab-book').classList.toggle('active', tabName === 'book');
         document.getElementById('tab-manage').classList.toggle('active', tabName === 'manage');
       }
+
+      // Order status filter logic
+      function filterOrdersByStatus() {
+        const filterSelect = document.getElementById('status-filter');
+        const orderCards = document.querySelectorAll('.order-history-card');
+        const emptyStateMessage = document.getElementById('empty-state-message');
+        const filteredEmptyState = document.getElementById('filtered-empty-state');
+        
+        if (!filterSelect) return; // Filter doesn't exist if no orders
+        
+        const selectedStatus = filterSelect.value;
+        let visibleCount = 0;
+        
+        orderCards.forEach(card => {
+          const cardStatus = card.getAttribute('data-status');
+          if (selectedStatus === 'all' || cardStatus === selectedStatus) {
+            card.style.display = '';
+            visibleCount++;
+          } else {
+            card.style.display = 'none';
+          }
+        });
+        
+        // Show/hide empty state messages
+        if (visibleCount === 0 && orderCards.length > 0) {
+          if (emptyStateMessage) emptyStateMessage.classList.add('hidden');
+          if (filteredEmptyState) filteredEmptyState.classList.remove('hidden');
+        } else {
+          if (emptyStateMessage) emptyStateMessage.classList.add('hidden');
+          if (filteredEmptyState) filteredEmptyState.classList.add('hidden');
+        }
+      }
+
+      // Initialize filter on page load
+      document.addEventListener('DOMContentLoaded', function() {
+        const filterSelect = document.getElementById('status-filter');
+        if (filterSelect) {
+          filterSelect.addEventListener('change', filterOrdersByStatus);
+          // Initial filter application
+          filterOrdersByStatus();
+        }
+      });
 
       // Flight search form handler
       document.getElementById('flight-search-form').addEventListener('submit', async function(e) {
@@ -230,6 +290,7 @@
                     <p><strong>Arrival:</strong> ${flight.arrival_datetime}</p>
                     <p><strong>Economy:</strong> $${flight.economy_seat_price}</p>
                     <p><strong>Business:</strong> $${flight.business_seat_price}</p>
+                    <button class="btn btn-primary btn-sm" onclick="location.href='/select_seat?flight_id=${flight.flight_id}'">Select</button>
                   </div>
                 </div>
               `;

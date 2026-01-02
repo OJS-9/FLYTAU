@@ -203,7 +203,7 @@ def get_ticket_details(order_id: int, email: str):
 
 def get_user_order_history(email: str) -> List[Dict]:
     """
-    Fetches order history for a user (customer or guest) with status that is not 'Active'.
+    Fetches order history for a user (customer or guest) including all statuses.
     Returns a list of orders with ticket details.
     """
     with get_db_connection() as cursor:
@@ -216,7 +216,7 @@ def get_user_order_history(email: str) -> List[Dict]:
             JOIN Flight f ON o.Flight_ID = f.ID
             LEFT JOIN Assigned a ON o.Order_ID = a.Order_ID
             LEFT JOIN CLASS c ON a.Class_ID = c.ID 
-            WHERE (o.Guest_Mail = %s OR o.Costumer_Mail = %s) AND o.Status != 'Active'
+            WHERE (o.Guest_Mail = %s OR o.Costumer_Mail = %s)
             GROUP BY o.Order_ID
             ORDER BY o.Order_Date DESC
         """

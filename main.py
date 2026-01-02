@@ -482,8 +482,7 @@ def booking_summary():
                            seats=seat_details,
                            flight=flight,
                            total_price=total_price,
-                           user_data=user_data,
-                           is_guest=(session.get("user_type") == "guest"))
+                           user_data=user_data)
 
 
 @app.route("/finalize_booking", methods=["POST"])
