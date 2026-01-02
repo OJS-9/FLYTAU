@@ -104,13 +104,20 @@
                 {% endif %}
             </div>
 
-            <div style="display: flex; justify-content: flex-end; align-items: center; padding: 20px 0; gap: 20px;">
-                <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">
-                    Required: <strong>{{ max_seats }}</strong> seats
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 0; gap: 20px;">
+                <a href="{{ url_for('user_dashboard' if user_type == 'customer' else 'guest_dashboard') }}" 
+                   class="btn btn-secondary" 
+                   style="text-decoration: none;">
+                    Return to Dashboard
+                </a>
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+                        Required: <strong>{{ max_seats }}</strong> seats
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        Confirm Selection
+                    </button>
                 </div>
-                <button type="submit" class="btn btn-primary btn-lg">
-                    Confirm Selection
-                </button>
             </div>
         </form>
     </div>

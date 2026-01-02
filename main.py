@@ -416,13 +416,15 @@ def select_seat():
 
     flight_id = int(fid_raw)  # המרה קריטית!
     max_seats = int(session.get('passengers', 1))
+    user_type = session.get('user_type', 'guest')  # Default to guest if not set
 
     seats_data = get_flight_seat_map(flight_id)
 
     return render_template("select_seat.html",
                            seats=seats_data,
                            flight_id=flight_id,
-                           max_seats=max_seats)
+                           max_seats=max_seats,
+                           user_type=user_type)
 
 
 @app.route("/booking_summary", methods=["POST"])
