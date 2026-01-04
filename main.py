@@ -452,33 +452,38 @@ def booking_summary():
     # 3. Dynamic Price Calculation
     total_price = 0
     seat_details = []
+    cursor = db_manager.get_cursor()
     try:
-        with get_db_connection() as cursor:
-            format_strings = ','.join(['%s'] * len(selected_seats))
-            query = f"SELECT ID, Type, Row_Num, Column_Letter, Seat_Type FROM class WHERE ID IN ({format_strings})"
-            cursor.execute(query, tuple(selected_seats))
-            seats_from_db = cursor.fetchall()
+        format_strings = ','.join(['%s'] * len(selected_seats))
+        query = f"SELECT ID, Type, Row_Num, Column_Letter, Seat_Type FROM class WHERE ID IN ({format_strings})"
+        cursor.execute(query, tuple(selected_seats))
+        seats_from_db = cursor.fetchall()
 
-            for row in seats_from_db:
-                seat_id, class_type, row_num, col_letter, seat_location = row
-                price = float(flight['business_price']) if class_type.lower() == 'business' else float(flight['economy_price'])
-                total_price += price
-                seat_details.append({
-                    "id": seat_id, "type": class_type, "row": row_num,
-                    "letter": col_letter, "location": seat_location, "price": price
-                })
+        for row in seats_from_db:
+            seat_id, class_type, row_num, col_letter, seat_location = row
+            price = float(flight['business_price']) if class_type.lower() == 'business' else float(flight['economy_price'])
+            total_price += price
+            seat_details.append({
+                "id": seat_id, "type": class_type, "row": row_num,
+                "letter": col_letter, "location": seat_location, "price": price
+            })
     except Exception as e:
         print(f"Database Error: {e}")
         return redirect(url_for('select_seat', flight_id=flight_id))
+    finally:
+        cursor.close()
 
     # 4. PRE-FILL LOGIC: Fetch from 'Costumer' table to show on screen
     # This data is passed to the HTML but will NOT be saved to the 'Order' table later.
     user_data = None
     if session.get("user_type") == "customer":
         email = session.get("user_email")
-        with get_db_connection() as cursor:
+        cursor = db_manager.get_cursor()
+        try:
             cursor.execute("SELECT Passport_Num, B_Date FROM Costumer WHERE Mail = %s", (email,))
             user_data = cursor.fetchone()
+        finally:
+            cursor.close()
 
     return render_template("booking_summary.html",
                            seats=seat_details,
