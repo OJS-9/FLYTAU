@@ -1218,3 +1218,100 @@ footer a:hover {
   .seat-box.economy { width: 40px; height: 40px; font-size: 10px; }
   .aisle-gap { width: 25px; }
 }
+
+/* ============================================
+   9. MAIN PAGE WITH LOGO
+   ============================================ */
+body.landing-page {
+    margin: 0;
+    height: 100vh;
+    font-family: 'Poppins', sans-serif;
+
+    background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/*LOCATION */
+.logo-container {
+    position: absolute;
+    top: 30px;
+    left: 30px;
+    z-index: 10;
+}
+
+
+.corner-logo {
+    width: 140px;
+    height: auto;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    transition: transform 0.3s ease;
+}
+
+.corner-logo:hover {
+    transform: scale(1.05);
+}
+
+.landing-container {
+    text-align: center;
+    color: #2c3e50;
+    z-index: 2;
+}
+
+.main-title {
+    font-size: 4rem;
+    font-weight: 600;
+    margin: 0;
+    color: #2c3e50;
+    letter-spacing: 2px;
+}
+
+.main-title .highlight { color: #4facfe; }
+
+.subtitle {
+    font-size: 1.1rem;
+    color: #7f8c8d;
+    margin-bottom: 40px;
+    font-weight: 300;
+}
+
+.action-buttons-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+}
+
+.btn-landing {
+    width: 260px;
+    padding: 14px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.btn-primary-landing {
+    background: #4facfe;
+    color: white;
+}
+
+.btn-secondary-landing, .btn-ghost-landing {
+    background: white;
+    color: #4facfe;
+    border: 1px solid #4facfe;
+}
+
+.btn-landing:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    background: #2c3e50;
+    color: white;
+    border-color: #2c3e50;
+}
