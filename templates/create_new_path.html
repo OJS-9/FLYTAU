@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>New Route Setup - FLYTAU</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+<div class="container">
+    <div class="card mt-xl p-lg shadow-md" style="max-width: 600px; margin: auto;">
+        <div class="card-header mb-lg">
+            <h2 class="text-primary">New Route Detected</h2>
+            <div class="badge bg-warning-light text-warning">
+                {{ origin }} <span class="mx-sm">✈</span> {{ dest }}
+            </div>
+            <p class="text-muted mt-md">This route isn't in our records. Please provide flight details to continue.</p>
+        </div>
+
+        <form action="/save_path_and_continue" method="POST">
+            <input type="hidden" name="origin" value="{{ origin }}">
+            <input type="hidden" name="dest" value="{{ dest }}">
+
+            <div class="form-group mb-md">
+                <label class="form-label">Flight Duration (Net Hours):</label>
+                <input type="number" step="0.1" name="duration" class="form-control"
+                       placeholder="e.g. 5.5" required>
+                <small class="text-muted">The actual flying time in hours.</small>
+            </div>
+
+            <div class="row gap-md">
+                <div class="col">
+                    <label class="form-label">{{ origin }} Timezone:</label>
+                    <input type="number" name="origin_tz" class="form-control"
+                           placeholder="UTC+ (e.g. 2)" required>
+                </div>
+                <div class="col">
+                    <label class="form-label">{{ dest }} Timezone:</label>
+                    <input type="number" name="dest_tz" class="form-control"
+                           placeholder="UTC- (e.g. -5)" required>
+                </div>
+            </div>
+
+            <div class="mt-xl flex gap-md">
+                <button type="submit" class="btn btn-primary flex-1">Save Route & Next Step</button>
+                <a href="{{ url_for('manage_flights') }}" class="btn btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Step 3: Assign Resources - FLYTAU</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+<main class="container">
+    <section class="card mt-xl m-auto" style="max-width: 650px;">
+        <div class="card-header text-center">
+            <h1 class="card-title text-primary">Step 3: Assign Resources</h1>
+            <p class="text-muted">Available assets for <strong>{{ origin }} ✈ {{ dest }}</strong> on {{ departure_time }}</p>
+        </div>
+
+        <div class="card-body">
+            <form id="flightForm" action="/finalize_flight_creation" method="POST" class="flex flex-column gap-md">
+                <input type="hidden" name="origin" value="{{ origin }}">
+                <input type="hidden" name="dest" value="{{ dest }}">
+                <input type="hidden" name="departure_time" value="{{ departure_time }}">
+
+                <div class="form-group">
+                    <label class="font-weight-medium">Select Available Aircraft:</label>
+                    <select id="plane_select" name="plane_id" class="form-control w-full" required onchange="updateRequirements()">
+                        <option value="" disabled selected>Choose a plane...</option>
+                        {% for plane in planes %}
+                        <option value="{{ plane.ID }}" data-size="{{ plane.Size }}">
+                            Plane #{{ plane.ID }} ({{ plane.Manufacturer }} - {{ plane.Size }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="font-weight-medium">Assign Pilots: <span id="pilot_req_text" class="text-primary">(Select Aircraft first)</span></label>
+                    <select id="pilot_ids" name="pilot_ids" class="form-control w-full" multiple required style="height: 100px;">
+                        {% for pilot in pilots %}
+                        <option value="{{ pilot.ID }}">{{ pilot.First_Name }} {{ pilot.Last_Name }} (ID: {{ pilot.ID }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="font-weight-medium">Assign Attendants: <span id="steward_req_text" class="text-primary">(Select Aircraft first)</span></label>
+                    <select id="attendant_ids" name="attendant_ids" class="form-control w-full" multiple required style="height: 120px;">
+                        {% for steward in attendants %}
+                        <option value="{{ steward.ID }}">{{ steward.First_Name }} {{ steward.Last_Name }} (ID: {{ steward.ID }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="card-footer px-0 pb-0 mt-lg flex gap-sm">
+                    <button type="submit" class="btn btn-success flex-1">Create Flight</button>
+                    <a href="{{ url_for('manage_flights') }}" class="btn btn-ghost">Start Over</a>
+                </div>
+            </form>
+        </div>
+    </section>
+</main>
+
+<script>
+    // Configuration for crew requirements based on aircraft size
+    const requirements = {
+        'Large': { pilots: 2, stewards: 4 },
+        'Small': { pilots: 1, stewards: 2 }
+    };
+
+    function updateRequirements() {
+        const select = document.getElementById('plane_select');
+        const selectedOption = select.options[select.selectedIndex];
+        const size = selectedOption.getAttribute('data-size');
+
+        if (requirements[size]) {
+            const req = requirements[size];
+            document.getElementById('pilot_req_text').innerText = `Select exactly ${req.pilots}`;
+            document.getElementById('steward_req_text').innerText = `Select exactly ${req.stewards}`;
+        }
+    }
+
+    document.getElementById('flightForm').onsubmit = function(e) {
+        const select = document.getElementById('plane_select');
+        const size = select.options[select.selectedIndex].getAttribute('data-size');
+        const req = requirements[size];
+
+        const selectedPilots = document.getElementById('pilot_ids').selectedOptions.length;
+        const selectedAttendants = document.getElementById('attendant_ids').selectedOptions.length;
+
+        if (!size) {
+            alert('Please select an aircraft.');
+            e.preventDefault();
+            return false;
+        }
+
+        if (selectedPilots !== req.pilots) {
+            alert(`For a ${size} plane, you must select exactly ${req.pilots} pilot(s).`);
+            e.preventDefault();
+            return false;
+        }
+        if (selectedAttendants !== req.stewards) {
+            alert(`For a ${size} plane, you must select exactly ${req.stewards} attendant(s).`);
+            e.preventDefault();
+            return false;
+        }
+    };
+</script>
+</body>
+</html>
