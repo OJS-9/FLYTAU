@@ -15,6 +15,9 @@ app.config.update(
 )
 Session(app)
 
+# Update active orders to completed on app startup
+update_active_orders_to_completed()
+
 
 @app.errorhandler(404)
 def invalid_route(e):
@@ -220,10 +223,19 @@ def guest_sign_in_route():
 def user_dashboard():
     if session.get("user_type") != "customer":
         return redirect("/login")
+    
+    # Update active orders to completed before fetching order history
+    update_active_orders_to_completed()
+    
+    # Get order history for the logged-in user
+    user_email = session.get("user_email")
+    order_history = get_user_order_history(user_email) if user_email else []
+    
     return render_template(
         "user_dashboard.html",
         user_name=session.get("user_name"),
-        user_email=session.get("user_email"),
+        user_email=user_email,
+        order_history=order_history,
     )
 
 
@@ -329,22 +341,47 @@ def search_flights_route():
 @app.route("/manage_reservations")
 def manage_reservations():
     order_id = request.args.get('order_id')
-    email = session.get('user_email') or session.get('guest_email')
+    user_email = session.get('user_email')
+    guest_email = session.get('guest_email')
+    email = user_email or guest_email
 
     if not order_id or not email:
         flash("Please provide a valid Order ID.")
-        return redirect(url_for('guest_dashboard'))
+        # Redirect based on user type
+        if user_email:
+            return redirect(url_for('user_dashboard'))
+        else:
+            return redirect(url_for('guest_dashboard'))
+
+    # Update active orders to completed before fetching ticket details
+    update_active_orders_to_completed()
 
     # Fetch details using the updated logic from utils.py
-    ticket = get_ticket_details(int(order_id), email)
+    try:
+        ticket = get_ticket_details(int(order_id), email)
+    except Exception as e:
+        ticket = None
 
     if not ticket:
-        # If no ticket is found for this email, flash an alert
-        flash(f"Order #{order_id} is not associated with your account.")
-        return redirect(url_for('guest_dashboard'))
+        # If no ticket is found for this email, flash an alert and redirect
+        error_msg = f"Order #{order_id} is not associated with your account or does not exist."
+        flash(error_msg)
+        # Redirect based on user type
+        if user_email:
+            return redirect(url_for('user_dashboard'))
+        else:
+            return redirect(url_for('guest_dashboard'))
 
-    # Instead of a new HTML, we return the same dashboard but with the 'ticket' data
-    return render_template("guest.html", ticket=ticket, show_manage=True)
+    # Check user type and render appropriate template
+    if user_email:
+        # Customer: render manage_order.html
+        # Add Passenger_Email to the ticket dict for the template
+        order_data = ticket.copy()
+        order_data['Passenger_Email'] = user_email
+        return render_template("manage_order.html", order=order_data)
+    else:
+        # Guest: render guest.html (current behavior)
+        return render_template("guest.html", ticket=ticket, show_manage=True)
 
 @app.route("/cancel_order", methods=["POST"])
 def cancel_order_route():
@@ -362,6 +399,10 @@ def cancel_order_route():
         else:
             # If failed (e.g. < 36h), we can pass the message back to the page
             order_data = get_ticket_details(int(order_id), email)
+            if order_data:
+                # Add Passenger_Email to the order data for the template
+                order_data = order_data.copy()
+                order_data['Passenger_Email'] = email
             return render_template("manage_order.html", order=order_data, error_message=message)
 
     return "Invalid Request", 400
@@ -375,13 +416,15 @@ def select_seat():
 
     flight_id = int(fid_raw)  # המרה קריטית!
     max_seats = int(session.get('passengers', 1))
+    user_type = session.get('user_type', 'guest')  # Default to guest if not set
 
     seats_data = get_flight_seat_map(flight_id)
 
     return render_template("select_seat.html",
                            seats=seats_data,
                            flight_id=flight_id,
-                           max_seats=max_seats)
+                           max_seats=max_seats,
+                           user_type=user_type)
 
 
 @app.route("/booking_summary", methods=["POST"])
@@ -441,8 +484,7 @@ def booking_summary():
                            seats=seat_details,
                            flight=flight,
                            total_price=total_price,
-                           user_data=user_data,
-                           is_guest=(session.get("user_type") == "guest"))
+                           user_data=user_data)
 
 
 @app.route("/finalize_booking", methods=["POST"])

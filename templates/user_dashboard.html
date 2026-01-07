@@ -3,17 +3,33 @@
   <head>
     <title>User Dashboard - FLYTAU</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .hidden { display: none !important; }
+    </style>
   </head>
   <body>
     <main class="container">
       <!-- Navigation Bar -->
       <nav class="flight-nav">
-        <a href="#" class="flight-nav-item active">Book A Flight</a>
-        <a href="#" class="flight-nav-item">My Booking</a>
+        <a href="javascript:void(0)" id="tab-book" class="flight-nav-item active" onclick="showTab('book')">Book A Flight</a>
+        <a href="javascript:void(0)" id="tab-manage" class="flight-nav-item" onclick="showTab('manage')">My Bookings</a>
+        <a href="{{ url_for('logout') }}" class="flight-nav-item" style="margin-left: auto; color: #dc2626;">Logout ({{ user_email }})</a>
       </nav>
 
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-error mt-md">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% if error %}
+        <div class="alert alert-error mt-md">{{ error }}</div>
+      {% endif %}
+
       <!-- Flight Search Section -->
-      <section class="card mt-xl">
+      <section id="section-book" class="card mt-xl">
         <div class="card-header">
           <h1 class="card-title">Welcome, {{ user_name or 'Customer' }}!</h1>
           <p class="text-muted">
@@ -98,9 +114,149 @@
           <div id="search-results" class="search-results hidden"></div>
         </div>
       </section>
+
+      <!-- My Booking Section -->
+      <section id="section-manage" class="card mt-xl hidden">
+        <div class="card-header">
+          <h1 class="card-title">My Bookings</h1>
+          <p class="text-muted">View your order history or find a specific reservation.</p>
+        </div>
+        <div class="card-body">
+          <!-- Order History Section -->
+          <div class="order-history-section" style="margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h2 style="margin: 0;">Order History</h2>
+              {% if order_history and order_history|length > 0 %}
+                <div class="form-group" style="margin: 0; max-width: 250px;">
+                  <label for="status-filter" style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: #6b7280;">Filter by Status</label>
+                  <select id="status-filter" class="form-control" style="width: 100%; padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 4px; font-size: 0.9rem;">
+                    <option value="all">All Orders</option>
+                    <option value="Active">Active</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Costumer Cancelation">Costumer Cancelation</option>
+                    <option value="System Cancelation">System Cancelation</option>
+                  </select>
+                </div>
+              {% endif %}
+            </div>
+            {% if order_history and order_history|length > 0 %}
+              <div class="order-history-list">
+                {% for order in order_history %}
+                  <div class="order-history-card" data-status="{{ order.Status }}" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background-color: #f9fafb;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                      <div>
+                        <h3 style="margin: 0; font-size: 1.1rem; color: #1f2937;">Order #{{ order.Ticket_ID }}</h3>
+                        <p style="margin: 0.25rem 0; color: #6b7280; font-size: 0.9rem;">Ordered on: {{ order.Order_Date }}</p>
+                      </div>
+                      <span style="padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; font-weight: 500;
+                        {% if order.Status == 'Completed' %}background-color: #d1fae5; color: #065f46;
+                        {% elif order.Status == 'Costumer Cancelation' %}background-color: #fee2e2; color: #991b1b;
+                        {% elif order.Status == 'System Cancelation' %}background-color: #fef3c7; color: #92400e;
+                        {% elif order.Status == 'Active' %}background-color: #dbeafe; color: #1e40af;
+                        {% else %}background-color: #e5e7eb; color: #374151;{% endif %}">
+                        {{ order.Status }}
+                      </span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 0.75rem;">
+                      <div>
+                        <p style="margin: 0; font-size: 0.85rem; color: #6b7280;">Route</p>
+                        <p style="margin: 0.25rem 0; font-weight: 500; color: #1f2937;">
+                          {{ order.Origin }} → {{ order.Destination }}
+                        </p>
+                      </div>
+                      <div>
+                        <p style="margin: 0; font-size: 0.85rem; color: #6b7280;">Departure</p>
+                        <p style="margin: 0.25rem 0; font-weight: 500; color: #1f2937;">{{ order.Departure_Time }}</p>
+                      </div>
+                      <div>
+                        <p style="margin: 0; font-size: 0.85rem; color: #6b7280;">Seats</p>
+                        <p style="margin: 0.25rem 0; font-weight: 500; color: #1f2937;">{{ order.Seat_ID }}</p>
+                      </div>
+                      <div>
+                        <p style="margin: 0; font-size: 0.85rem; color: #6b7280;">Total Price</p>
+                        <p style="margin: 0.25rem 0; font-weight: 500; color: #1f2937;">${{ order.Total_Price }}</p>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p id="empty-state-message" class="text-muted" style="padding: 2rem; text-align: center; background-color: #f9fafb; border-radius: 8px;">
+                No order history found. Your completed and cancelled orders will appear here.
+              </p>
+            {% endif %}
+            <p id="filtered-empty-state" class="text-muted hidden" style="padding: 2rem; text-align: center; background-color: #f9fafb; border-radius: 8px;">
+              No orders found with the selected status filter.
+            </p>
+          </div>
+
+          <!-- Find Specific Order Section -->
+          <div style="border-top: 1px solid #e5e7eb; padding-top: 1.5rem; margin-top: 1.5rem;">
+            <h2 style="margin-bottom: 1rem;">Find a Specific Reservation</h2>
+            <form action="{{ url_for('manage_reservations') }}" method="GET" style="max-width: 400px;">
+              <div class="form-group">
+                <label for="order_id">Order ID</label>
+                <input type="number" id="order_id" name="order_id" placeholder="Enter Order ID" required>
+              </div>
+              <button type="submit" class="btn btn-secondary w-100 mt-md">View My Order</button>
+            </form>
+          </div>
+        </div>
+      </section>
     </main>
 
     <script>
+      // Tab switching logic
+      function showTab(tabName) {
+        document.getElementById('section-book').classList.toggle('hidden', tabName !== 'book');
+        document.getElementById('section-manage').classList.toggle('hidden', tabName !== 'manage');
+        document.getElementById('tab-book').classList.toggle('active', tabName === 'book');
+        document.getElementById('tab-manage').classList.toggle('active', tabName === 'manage');
+      }
+
+      // Order status filter logic
+      function filterOrdersByStatus() {
+        const filterSelect = document.getElementById('status-filter');
+        const orderCards = document.querySelectorAll('.order-history-card');
+        const emptyStateMessage = document.getElementById('empty-state-message');
+        const filteredEmptyState = document.getElementById('filtered-empty-state');
+        
+        if (!filterSelect) return; // Filter doesn't exist if no orders
+        
+        const selectedStatus = filterSelect.value;
+        let visibleCount = 0;
+        
+        orderCards.forEach(card => {
+          const cardStatus = card.getAttribute('data-status');
+          if (selectedStatus === 'all' || cardStatus === selectedStatus) {
+            card.style.display = '';
+            visibleCount++;
+          } else {
+            card.style.display = 'none';
+          }
+        });
+        
+        // Show/hide empty state messages
+        if (visibleCount === 0 && orderCards.length > 0) {
+          if (emptyStateMessage) emptyStateMessage.classList.add('hidden');
+          if (filteredEmptyState) filteredEmptyState.classList.remove('hidden');
+        } else {
+          if (emptyStateMessage) emptyStateMessage.classList.add('hidden');
+          if (filteredEmptyState) filteredEmptyState.classList.add('hidden');
+        }
+      }
+
+      // Initialize filter on page load
+      document.addEventListener('DOMContentLoaded', function() {
+        const filterSelect = document.getElementById('status-filter');
+        if (filterSelect) {
+          filterSelect.addEventListener('change', filterOrdersByStatus);
+          // Initial filter application
+          filterOrdersByStatus();
+        }
+      });
+
+      // Flight search form handler
       document.getElementById('flight-search-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -134,6 +290,7 @@
                     <p><strong>Arrival:</strong> ${flight.arrival_datetime}</p>
                     <p><strong>Economy:</strong> $${flight.economy_seat_price}</p>
                     <p><strong>Business:</strong> $${flight.business_seat_price}</p>
+                    <button class="btn btn-primary btn-sm" onclick="location.href='/select_seat?flight_id=${flight.flight_id}'">Select</button>
                   </div>
                 </div>
               `;
