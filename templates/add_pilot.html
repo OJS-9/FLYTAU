@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add New Pilot - FLYTAU</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .header-blue { background-color: #003366; color: white !important; padding: 25px; border-radius: 8px 8px 0 0; text-align: center; }
+        .header-blue h1 { color: white !important; margin: 0; font-size: 24px; }
+        .card { border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; max-width: 700px; margin: auto; margin-top: 30px; background: white; }
+        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; color: #003366; margin-bottom: 5px; font-size: 14px; }
+        input { width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px; box-sizing: border-box; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; background: #f0f7ff; padding: 15px; border-radius: 6px; border: 1px solid #cce4ff; }
+        .checkbox-group input { width: auto; }
+        .btn-submit { background-color: #0066cc; color: white; border: none; padding: 14px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; font-size: 16px; }
+    </style>
+</head>
+<body style="background-color: #f5f7fa;">
+    <main class="container">
+        <section class="card">
+            <div class="header-blue">
+                <h1>Register New Pilot</h1>
+            </div>
+            <div class="card-body" style="padding: 30px;">
+                <form action="/save_pilot" method="POST">
+                    <div class="grid-inputs">
+                        <div class="form-group">
+                            <label>National ID / Employee ID</label>
+                            <input type="number" name="pilot_id" placeholder="Digits Only" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Starting Date</label>
+                            <input type="date" name="starting_date" required>
+                        </div>
+                    </div>
+
+                    <div class="grid-inputs">
+                        <div class="form-group">
+                            <label>First Name</label>
+                            <input type="text" name="first_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name</label>
+                            <input type="text" name="last_name" required>
+                        </div>
+                    </div>
+
+                    <div class="grid-inputs">
+                        <div class="form-group">
+                            <label>City</label>
+                            <input type="text" name="city">
+                        </div>
+                        <div class="form-group">
+                            <label>Street</label>
+                            <input type="text" name="street">
+                        </div>
+                    </div>
+
+                    <div class="grid-inputs">
+                        <div class="form-group">
+                            <label>House Number</label>
+                            <input type="number" name="number">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="tel" name="phone" placeholder="05X-XXXXXXX">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 10px;">
+                        <div class="checkbox-group">
+                            <input type="checkbox" name="long_flight_cer" id="cer">
+                            <label for="cer" style="margin-bottom: 0; cursor: pointer;">Certified for Long Distance Flights</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Register Pilot</button>
+                    <div style="text-align: center; margin-top: 15px;">
+                        <a href="{{ url_for('admin_dashboard') }}" style="color: #666; text-decoration: none; font-size: 14px;">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

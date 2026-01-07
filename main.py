@@ -486,17 +486,271 @@ def finalize_booking():
         flash("We could not process your booking. Please try again.")
         return redirect(url_for('home'))
 
-@app.route('/manage_orders')
-def manage_orders():
-    return "Manage Orders Page - Coming Soon"
 
 @app.route('/manage_flights')
 def manage_flights():
-    return "Manage Flights Page - Coming Soon"
+    return render_template('manage_flights.html')
+
+
+@app.route('/manage_orders')
+def manage_orders():
+    return "Order Management Page - Coming Soon"
 
 @app.route('/view_reports')
 def view_reports():
     return "Management Reports - Coming Soon"
+
+@app.route('/add_plane')
+def add_plane():
+    return render_template('add_plane.html')
+
+
+@app.route('/add_pilot')
+def add_pilot_page():
+    return render_template('add_pilot.html')
+
+@app.route('/add_steward')
+def add_steward():
+    return render_template('add_steward.html')
+
+@app.route('/save_pilot', methods=['POST'])
+def save_pilot_route():
+    try:
+        pilot_id = add_crew_member(request.form, 'pilot')
+        return render_template('crew_success.html',
+                               member_id=pilot_id,
+                               role="Pilot",
+                               name=f"{request.form.get('first_name')} {request.form.get('last_name')}",
+                               has_certification=bool(request.form.get('long_flight_cer')))
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+@app.route('/save_steward', methods=['POST'])
+def save_steward_route():
+    try:
+        steward_id = add_crew_member(request.form, 'steward')
+        return render_template('crew_success.html',
+                               member_id=steward_id,
+                               role="Steward",
+                               name=f"{request.form.get('first_name')} {request.form.get('last_name')}",
+                               has_certification=bool(request.form.get('long_flight_cer')))
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+@app.route('/save_plane', methods=['POST'])
+def save_plane_route():
+    try:
+        manufacturer = request.form.get('manufacturer')
+        size = request.form.get('size')
+        eco_cap = int(request.form.get('eco_cap'))
+        bus_cap = int(request.form.get('bus_cap'))
+        purchase_date = request.form.get('purchase_date')
+
+        # Call the utility function
+        plane_id = create_aircraft_with_seats(manufacturer, size, eco_cap, bus_cap, purchase_date)
+
+        # Instead of redirecting to dashboard, show the summary
+        return render_template('plane_success.html',
+                               plane_id=plane_id,
+                               manufacturer=manufacturer,
+                               eco_cap=eco_cap,
+                               bus_cap=bus_cap,
+                               total_cap=eco_cap + bus_cap)
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return f"System Error: {str(e)}", 500
+
+
+@app.route('/validate_route', methods=['POST'])
+def validate_route():
+    origin = request.form.get('origin').upper()
+    dest = request.form.get('dest').upper()
+
+    if origin == dest:
+        flash("Origin and Destination cannot be the same.")
+        return redirect(url_for('manage_flights'))
+
+    path_data = get_path_info(origin, dest)
+
+    if path_data:
+        return render_template('select_date_time.html', origin=origin, dest=dest)
+    else:
+        return render_template('create_new_path.html', origin=origin, dest=dest)
+
+
+@app.route('/save_path_and_continue', methods=['POST'])
+def save_path_and_continue():
+    origin = request.form.get('origin')
+    dest = request.form.get('dest')
+    duration = float(request.form.get('duration'))
+    o_tz = int(request.form.get('origin_tz'))
+    d_tz = int(request.form.get('dest_tz'))
+
+    try:
+        add_new_path(origin, dest, duration, o_tz, d_tz)
+    except Exception as e:
+        if "1062" in str(e):
+            print(f"Path {origin}-{dest} already exists. Proceeding...")
+        else:
+            print(f"Database error: {e}")
+            return f"Error: {str(e)}", 500
+
+    return render_template('select_date_time.html', origin=origin, dest=dest)
+
+
+@app.route('/get_available_resources', methods=['POST'])
+def step_2_select_plane():
+    try:
+        origin = request.form.get('origin')
+        dest = request.form.get('dest')
+        departure_time = request.form.get('departure_time')
+
+        if not departure_time:
+            flash("Please select a departure date and time.")
+            return redirect(url_for('manage_flights'))
+
+        resources = get_available_resources(origin, dest, departure_time)
+
+        return render_template('select_plane.html',
+                               origin=origin,
+                               dest=dest,
+                               departure_time=departure_time,
+                               planes=resources.get('planes', []))
+    except Exception as e:
+        print(f"Error in Step 2: {e}")
+        return redirect(url_for('manage_flights'))
+
+
+@app.route('/set_pricing', methods=['POST'])
+def step_2_5_set_pricing():
+    """
+    STEP 2.5: Intermediate step to set ticket prices after selecting a plane.
+    """
+    return render_template('set_pricing.html',
+                           origin=request.form.get('origin'),
+                           dest=request.form.get('dest'),
+                           departure_time=request.form.get('departure_time'),
+                           plane_id=request.form.get('plane_id'),
+                           plane_size=request.form.get('plane_size'))
+
+
+@app.route('/get_available_crew', methods=['POST'])
+def step_3_select_crew():
+    try:
+        origin = request.form.get('origin')
+        dest = request.form.get('dest')
+        departure_time = request.form.get('departure_time')
+        plane_id = request.form.get('plane_id')
+        plane_size = request.form.get('plane_size')
+        economy_price = request.form.get('economy_price')
+        business_price = request.form.get('business_price')
+
+        if plane_size == 'Large':
+            req_pilots, req_stewards = 3, 6
+        else:
+            req_pilots, req_stewards = 2, 3
+
+        resources = get_available_resources(origin, dest, departure_time)
+
+        return render_template('assign_crew.html',
+                               origin=origin,
+                               dest=dest,
+                               departure_time=departure_time,
+                               plane_id=plane_id,
+                               plane_size=plane_size,
+                               economy_price=economy_price,
+                               business_price=business_price,
+                               pilots=resources.get('pilots', []),
+                               attendants=resources.get('attendants', []),
+                               req_pilots=req_pilots,
+                               req_stewards=req_stewards)
+    except Exception as e:
+        print(f"Error in Step 3: {e}")
+        return redirect(url_for('manage_flights'))
+
+
+@app.route('/finalize_flight_creation', methods=['POST'])
+def finalize_flight_creation():
+    try:
+        # 1. Extract data from form
+        origin = request.form.get('origin')
+        dest = request.form.get('dest')
+        departure_time = request.form.get('departure_time')
+        plane_id = request.form.get('plane_id')
+        economy_price = request.form.get('economy_price')
+        business_price = request.form.get('business_price')
+
+        pilot_ids = request.form.getlist('pilot_ids')
+        attendant_ids = request.form.getlist('attendant_ids')
+        manager_id = session.get('user_id')
+
+        with get_db_connection() as cursor:
+            # 2. Get Plane Size and Staffing Requirements
+            cursor.execute("SELECT Size FROM plane WHERE ID = %s", (plane_id,))
+            plane_row = cursor.fetchone()
+            plane_size = plane_row[0]
+            req_p, req_s = (3, 6) if plane_size == 'Large' else (2, 3)
+
+            # 3. Server-side Crew Validation
+            if len(pilot_ids) != req_p or len(attendant_ids) != req_s:
+                return f"Error: Invalid crew count.", 400
+
+            # 4. Fetch Duration from Path table
+            cursor.execute("SELECT Clock_Duration FROM path WHERE Origin_Airport = %s AND Dest_Airport = %s",
+                           (origin, dest))
+            path_row = cursor.fetchone()
+            duration = path_row[0] if path_row else 2
+
+            # 5. Insert Flight with USER-DEFINED prices
+            sql_flight = """
+                INSERT INTO flight (
+                    Departure_DateTime, Path_Dest_Airport, Path_Origin_Airport, 
+                    Path_Clock_Duration, Manager_ID, Plane_ID, 
+                    Business_Seat_Price, Economy_Seat_Price
+                ) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql_flight, (
+                departure_time, dest, origin, duration,
+                manager_id, plane_id, business_price, economy_price
+            ))
+            new_flight_id = cursor.lastrowid
+
+            # 6. Assign Crew
+            pilot_assignments = [(p_id, new_flight_id) for p_id in pilot_ids]
+            cursor.executemany("INSERT INTO pilot_works_flight (Pilot_ID, Flight_ID) VALUES (%s, %s)",
+                               pilot_assignments)
+
+            steward_assignments = [(s_id, new_flight_id) for s_id in attendant_ids]
+            cursor.executemany("INSERT INTO steward_works_flight (Steward_ID, Flight_ID) VALUES (%s, %s)",
+                               steward_assignments)
+
+            # 7. Fetch Crew Names for summary
+            format_p = ','.join(['%s'] * len(pilot_ids))
+            cursor.execute(f"SELECT First_Name, Last_Name FROM pilot WHERE ID IN ({format_p})", tuple(pilot_ids))
+            pilots_names = cursor.fetchall()
+
+            format_s = ','.join(['%s'] * len(attendant_ids))
+            cursor.execute(f"SELECT First_Name, Last_Name FROM steward WHERE ID IN ({format_s})", tuple(attendant_ids))
+            stewards_names = cursor.fetchall()
+
+        # 8. Success Response including prices
+        return render_template('flight_summary.html',
+                               flight_id=new_flight_id,
+                               origin=origin, dest=dest,
+                               departure_time=departure_time,
+                               duration=duration,
+                               plane_id=plane_id,
+                               economy_price=economy_price,
+                               business_price=business_price,
+                               pilots=pilots_names,
+                               stewards=stewards_names)
+
+    except Exception as e:
+        print(f"Finalize Error: {e}")
+        return f"System Error: {str(e)}", 500
+
 
 if __name__ == "__main__":
     app.run(debug=True)
