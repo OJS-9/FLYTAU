@@ -3,48 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <title>Aircraft Registered - FLYTAU</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <style>
-        .header-green { background-color: #10b981; color: white !important; padding: 25px; border-radius: 8px 8px 0 0; text-align: center; }
-        .header-green h1 { color: white !important; margin: 0; font-size: 24px; }
-        .summary-card { border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; max-width: 500px; margin: auto; margin-top: 50px; background: white; }
-        .data-row { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #f1f5f9; }
-        .label { color: #64748b; font-weight: 500; }
-        .value { color: #0f172a; font-weight: bold; }
-        .btn-home { background-color: #0066cc; color: white; display: block; text-align: center; padding: 14px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 25px; }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--spacing-md) 0;
+            border-bottom: 1px solid var(--color-gray-200);
+        }
+        .data-row:last-of-type {
+            border-bottom: none;
+        }
+        .data-label {
+            color: var(--color-text-secondary);
+            font-weight: var(--font-weight-medium);
+        }
+        .data-value {
+            color: var(--color-text-primary);
+            font-weight: var(--font-weight-bold);
+        }
     </style>
 </head>
-<body style="background-color: #f5f7fa;">
+<body>
     <main class="container">
-        <section class="summary-card">
-            <div class="header-green">
-                <h1>✓ Aircraft Registered</h1>
-                <p style="margin-top: 5px; opacity: 0.9;">Successfully added to fleet</p>
+        <section class="card mt-xl m-auto" style="max-width: 500px;">
+            <div class="card-header text-center">
+                <h1 class="card-title">✓ Aircraft Registered</h1>
+                <p class="text-muted mb-sm">Successfully added to fleet</p>
             </div>
 
-            <div style="padding: 30px;">
+            <div class="card-body">
                 <div class="data-row">
-                    <span class="label">Aircraft ID:</span>
-                    <span class="value">#{{ plane_id }}</span>
+                    <span class="data-label">Aircraft ID:</span>
+                    <span class="data-value">#{{ plane_id }}</span>
                 </div>
                 <div class="data-row">
-                    <span class="label">Manufacturer:</span>
-                    <span class="value">{{ manufacturer }}</span>
+                    <span class="data-label">Manufacturer:</span>
+                    <span class="data-value">{{ manufacturer }}</span>
                 </div>
                 <div class="data-row">
-                    <span class="label">Business Class:</span>
-                    <span class="value">{{ bus_cap }} Seats</span>
+                    <span class="data-label">Business Class:</span>
+                    <span class="data-value">{{ bus_cap }} Seats</span>
                 </div>
                 <div class="data-row">
-                    <span class="label">Economy Class:</span>
-                    <span class="value">{{ eco_cap }} Seats</span>
+                    <span class="data-label">Economy Class:</span>
+                    <span class="data-value">{{ eco_cap }} Seats</span>
                 </div>
-                <div class="data-row" style="border-bottom: none; background: #f8fafc; margin-top: 10px; padding: 15px;">
-                    <span class="label" style="color: #003366;">Total Capacity:</span>
-                    <span class="value" style="color: #003366; font-size: 1.1rem;">{{ total_cap }} Seats</span>
+                <div class="alert alert-success mt-md">
+                    <div class="flex justify-between">
+                        <span class="text-primary" style="font-weight: var(--font-weight-semibold);">Total Capacity:</span>
+                        <span class="text-primary" style="font-size: 1.1rem; font-weight: var(--font-weight-bold);">{{ total_cap }} Seats</span>
+                    </div>
                 </div>
 
-                <a href="{{ url_for('admin_dashboard') }}" class="btn-home">Return to Dashboard</a>
+                <div class="mt-lg">
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary w-full">Return to Dashboard</a>
+                </div>
             </div>
         </section>
     </main>

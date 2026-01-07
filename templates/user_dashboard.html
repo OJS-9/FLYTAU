@@ -28,6 +28,18 @@
         <div class="alert alert-error mt-md">{{ error }}</div>
       {% endif %}
 
+      <!-- Find Specific Order Section (visible only on "My Bookings" tab) -->
+      <div id="find-reservation-section" class="hidden" style="border-top: 1px solid #e5e7eb; padding-top: 1.5rem; margin-top: 1.5rem;">
+        <h2 style="margin-bottom: 1rem;">Find a Specific Reservation</h2>
+        <form action="{{ url_for('manage_reservations') }}" method="GET" style="max-width: 400px;">
+          <div class="form-group">
+            <label for="order_id">Order ID</label>
+            <input type="number" id="order_id" name="order_id" placeholder="Enter Order ID" required>
+          </div>
+          <button type="submit" class="btn btn-secondary w-100 mt-md">View My Order</button>
+        </form>
+      </div>
+
       <!-- Flight Search Section -->
       <section id="section-book" class="card mt-xl">
         <div class="card-header">
@@ -112,6 +124,15 @@
 
           <!-- Search Results Area -->
           <div id="search-results" class="search-results hidden"></div>
+
+          <!-- Future Flights Section -->
+          <div id="future-flights-section" style="margin-top: 2rem; border-top: 1px solid #e5e7eb; padding-top: 1.5rem;">
+            <h2 style="margin-bottom: 1rem;">All Upcoming Flights</h2>
+            <div id="future-flights-list" class="flight-results-list">
+              <p class="text-muted">Loading upcoming flights...</p>
+            </div>
+            <div id="future-flights-pagination" style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1.5rem;"></div>
+          </div>
         </div>
       </section>
 
@@ -189,18 +210,6 @@
               No orders found with the selected status filter.
             </p>
           </div>
-
-          <!-- Find Specific Order Section -->
-          <div style="border-top: 1px solid #e5e7eb; padding-top: 1.5rem; margin-top: 1.5rem;">
-            <h2 style="margin-bottom: 1rem;">Find a Specific Reservation</h2>
-            <form action="{{ url_for('manage_reservations') }}" method="GET" style="max-width: 400px;">
-              <div class="form-group">
-                <label for="order_id">Order ID</label>
-                <input type="number" id="order_id" name="order_id" placeholder="Enter Order ID" required>
-              </div>
-              <button type="submit" class="btn btn-secondary w-100 mt-md">View My Order</button>
-            </form>
-          </div>
         </div>
       </section>
     </main>
@@ -212,6 +221,12 @@
         document.getElementById('section-manage').classList.toggle('hidden', tabName !== 'manage');
         document.getElementById('tab-book').classList.toggle('active', tabName === 'book');
         document.getElementById('tab-manage').classList.toggle('active', tabName === 'manage');
+
+        // Show "Find a Specific Reservation" only on "My Bookings" tab
+        const findReservationSection = document.getElementById('find-reservation-section');
+        if (findReservationSection) {
+          findReservationSection.classList.toggle('hidden', tabName !== 'manage');
+        }
       }
 
       // Order status filter logic
@@ -254,7 +269,94 @@
           // Initial filter application
           filterOrdersByStatus();
         }
+        
+        // Load future flights on page load
+        loadFutureFlights(1);
       });
+
+      // Future flights loading and rendering functions
+      async function loadFutureFlights(page) {
+        const flightsList = document.getElementById('future-flights-list');
+        const paginationDiv = document.getElementById('future-flights-pagination');
+        
+        flightsList.innerHTML = '<p class="text-muted">Loading upcoming flights...</p>';
+        paginationDiv.innerHTML = '';
+
+        try {
+          const response = await fetch(`/get_future_flights?page=${page}`);
+          const data = await response.json();
+
+          if (data.error) {
+            flightsList.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+          } else {
+            renderFutureFlights(data);
+            renderPagination(data);
+          }
+        } catch (error) {
+          flightsList.innerHTML = `<div class="alert alert-error">An error occurred while loading flights. Please try again.</div>`;
+        }
+      }
+
+      function renderFutureFlights(data) {
+        const flightsList = document.getElementById('future-flights-list');
+        
+        if (!data.flights || data.flights.length === 0) {
+          flightsList.innerHTML = '<p class="text-muted">No upcoming flights available.</p>';
+          return;
+        }
+
+        let html = '<div class="flight-results-list">';
+        data.flights.forEach(flight => {
+          html += `
+            <div class="flight-result-card">
+              <div class="flight-route">
+                <span class="airport-code-large">${flight.origin_airport}</span>
+                <span class="flight-arrow">→</span>
+                <span class="airport-code-large">${flight.destination_airport}</span>
+              </div>
+              <div class="flight-details">
+                <p><strong>Departure:</strong> ${flight.departure_datetime}</p>
+                <p><strong>Arrival:</strong> ${flight.arrival_datetime}</p>
+                <p><strong>Economy:</strong> $${flight.economy_seat_price}</p>
+                <p><strong>Business:</strong> $${flight.business_seat_price}</p>
+                <button class="btn btn-primary btn-sm" onclick="location.href='/select_seat?flight_id=${flight.flight_id}'">Select</button>
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+        flightsList.innerHTML = html;
+      }
+
+      function renderPagination(data) {
+        const paginationDiv = document.getElementById('future-flights-pagination');
+        
+        if (data.total_pages <= 1) {
+          paginationDiv.innerHTML = '';
+          return;
+        }
+
+        let html = '';
+        
+        // Previous button
+        if (data.page > 1) {
+          html += `<button class="btn btn-secondary btn-sm" onclick="loadFutureFlights(${data.page - 1})">Previous</button>`;
+        } else {
+          html += `<button class="btn btn-secondary btn-sm" disabled>Previous</button>`;
+        }
+
+        // Page indicator
+        html += `<span style="padding: 0 1rem;">Page ${data.page} of ${data.total_pages}</span>`;
+
+        // Next button
+        if (data.page < data.total_pages) {
+          html += `<button class="btn btn-secondary btn-sm" onclick="loadFutureFlights(${data.page + 1})">Next</button>`;
+        } else {
+          html += `<button class="btn btn-secondary btn-sm" disabled>Next</button>`;
+        }
+
+        paginationDiv.innerHTML = html;
+      }
 
       // Flight search form handler
       document.getElementById('flight-search-form').addEventListener('submit', async function(e) {
@@ -299,6 +401,12 @@
             resultsDiv.innerHTML = html;
           } else {
             resultsDiv.innerHTML = '<p class="text-muted">No flights found for your search criteria.</p>';
+          }
+          
+          // Ensure future flights section is visible below search results
+          const futureFlightsSection = document.getElementById('future-flights-section');
+          if (futureFlightsSection) {
+            futureFlightsSection.style.display = '';
           }
         } catch (error) {
           resultsDiv.innerHTML = `<div class="alert alert-error">An error occurred while searching. Please try again.</div>`;

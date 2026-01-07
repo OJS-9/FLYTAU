@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FLYTAU - Flight Booking</title>
+
+    <!-- Tailwind + plugins -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#007B8F", // Teal from the logo swoosh
+                        secondary: "#0B253A", // Dark blue from the text/plane
+                        "background-light": "#F3F7F9",
+                        "background-dark": "#0F172A",
+                        "surface-light": "#FFFFFF",
+                        "surface-dark": "#1E293B",
+                    },
+                    fontFamily: {
+                        display: ["Montserrat", "sans-serif"],
+                        body: ["Montserrat", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                    },
+                },
+            },
+        };
+    </script>
+
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-secondary dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
+    <!-- Top nav (logo only for now) -->
+    <nav class="w-full bg-surface-light dark:bg-surface-dark shadow-sm py-4 px-6 fixed top-0 z-50 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <span class="material-icons text-primary text-3xl transform rotate-45">flight</span>
+                <span class="text-2xl font-bold tracking-tight text-secondary dark:text-white">FLYTAU</span>
+            </div>
+            <button class="md:hidden text-gray-600 dark:text-gray-300" type="button">
+                <span class="material-icons">menu</span>
+            </button>
+        </div>
+    </nav>
+
+    <main class="flex-grow flex items-center justify-center relative pt-20 px-4">
+        <!-- Background decorations -->
+        <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+            <div class="absolute -top-20 -right-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+            <div class="absolute top-40 -left-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-0 right-1/4 w-full h-1/2 bg-gradient-to-t from-white/50 to-transparent dark:from-background-dark dark:to-transparent"></div>
+        </div>
+
+        <div class="max-w-md w-full z-10 flex flex-col items-center text-center space-y-8 py-12">
+            <!-- Logo + title -->
+            <div class="flex flex-col items-center mb-4 animate-float">
+                <div class="relative w-40 h-40 mb-4 flex items-center justify-center">
+                    <!-- Outer animated rings -->
+                    <div class="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse"></div>
+                    <div class="absolute w-32 h-32 rounded-full border-t-4 border-l-4 border-primary transform -rotate-12"></div>
+
+                    <!-- Circular logo container -->
+                    <div class="relative w-32 h-32 rounded-full overflow-hidden shadow-lg bg-white">
+                        <img
+                            src="{{ url_for('static', filename='images/flytau_logo.png') }}"
+                            alt="FLYTAU logo"
+                            class="w-full h-full object-contain"
+                        >
+                    </div>
+                </div>
+                <h1 class="text-5xl font-extrabold tracking-tight text-secondary dark:text-white">FLYTAU</h1>
+                <p class="text-gray-500 dark:text-gray-400 mt-2 font-medium">Your journey begins here.</p>
+            </div>
+
+            <!-- Auth / entry card -->
+            <div class="w-full bg-surface-light dark:bg-surface-dark p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 transition-colors duration-300">
+                <div class="space-y-4">
+                    <form method="POST" class="space-y-4">
+                        <!-- Login -->
+                        <button
+                            type="submit"
+                            name="login_type"
+                            value="login"
+                            class="w-full group relative flex justify-center py-3.5 px-4 border border-transparent text-sm font-semibold rounded-lg text-white bg-secondary hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                            <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                                <span class="material-icons text-white/70 group-hover:text-white text-lg">login</span>
+                            </span>
+                            Login
+                        </button>
+
+                        <!-- Sign up -->
+                        <button
+                            type="submit"
+                            name="login_type"
+                            value="signup"
+                            class="w-full group relative flex justify-center py-3.5 px-4 border border-transparent text-sm font-semibold rounded-lg text-white bg-primary hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                            <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                                <span class="material-icons text-white/70 group-hover:text-white text-lg">person_add</span>
+                            </span>
+                            Join FLYTAU
+                        </button>
+
+                        <!-- Divider -->
+                        <div class="relative py-2">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-gray-200 dark:border-gray-600"></div>
+                            </div>
+                            <div class="relative flex justify-center text-sm">
+                                <span class="px-2 bg-surface-light dark:bg-surface-dark text-gray-500 dark:text-gray-400">Or</span>
+                            </div>
+                        </div>
+
+                        <!-- Continue as guest -->
+                        <button
+                            type="submit"
+                            name="login_type"
+                            value="guest"
+                            class="w-full group relative flex justify-center py-3.5 px-4 border border-gray-300 dark:border-gray-600 text-sm font-semibold rounded-lg text-gray-700 dark:text-gray-200 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all">
+                            Continue as Guest
+                        </button>
+                    </form>
+                </div>
+
+                <div class="mt-6 text-center">
+                    <!-- No dedicated forgot-password route yet; link to login page -->
+                    <a class="text-xs text-gray-500 dark:text-gray-400 hover:text-primary transition-colors"
+                       href="{{ url_for('login') }}">
+                        Forgot your password?
+                    </a>
+                </div>
+            </div>
+
+            <!-- Footer links (placeholders for now) -->
+            <div class="flex space-x-6 text-sm text-gray-500 dark:text-gray-400">
+                <a class="hover:text-primary transition-colors" href="#">Privacy</a>
+                <span class="text-gray-300 dark:text-gray-600">•</span>
+                <a class="hover:text-primary transition-colors" href="#">Terms</a>
+                <span class="text-gray-300 dark:text-gray-600">•</span>
+                <a class="hover:text-primary transition-colors" href="#">Contact</a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
+
+

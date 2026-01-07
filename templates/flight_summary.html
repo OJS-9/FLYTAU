@@ -3,87 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <title>Flight Summary - FLYTAU</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <style>
-        .header-blue { background-color: #003366; color: #ffffff !important; padding: 25px; border-radius: 8px 8px 0 0; }
-        .header-blue h1 { color: #ffffff !important; margin: 0; font-size: 24px; }
-        .summary-card { border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; max-width: 600px; }
-
-        .summary-section { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; justify-content: space-between; align-items: center; }
-        .summary-label { color: #64748b; font-weight: 500; }
-        .summary-value { color: #0f172a; font-weight: bold; text-align: right; }
-
-        .crew-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
-        .crew-title { color: #003366; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #003366; display: inline-block; }
-
-        /* Pricing Section Style */
-        .pricing-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 15px; margin-top: 15px; }
-        .price-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .price-label { color: #166534; font-size: 0.9rem; }
-        .price-val { color: #15803d; font-weight: 800; }
-
-        .btn-dashboard { background-color: #0066cc; color: white; display: block; text-align: center; padding: 15px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 20px; }
+        .summary-section {
+            border-bottom: 1px solid var(--color-gray-200);
+            padding: var(--spacing-md) 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .summary-section:last-of-type {
+            border-bottom: none;
+        }
+        .summary-label {
+            color: var(--color-text-secondary);
+            font-weight: var(--font-weight-medium);
+        }
+        .summary-value {
+            color: var(--color-text-primary);
+            font-weight: var(--font-weight-bold);
+            text-align: right;
+        }
     </style>
 </head>
-<body style="background-color: #f5f7fa;">
-
-<main class="container">
-    <section class="summary-card m-auto mt-xl">
-        <div class="header-blue">
-            <h1>Flight Manifest Created</h1>
-            <p style="margin: 5px 0 0 0; opacity: 0.9;">Flight ID: #{{ flight_id }}</p>
-        </div>
-
-        <div class="card-body" style="background-color: white; padding: 30px;">
-            <div class="summary-section">
-                <span class="summary-label">Route:</span>
-                <span class="summary-value" style="font-size: 1.2rem; color: #003366;">{{ origin }} ➔ {{ dest }}</span>
-            </div>
-            <div class="summary-section">
-                <span class="summary-label">Departure:</span>
-                <span class="summary-value">{{ departure_time }}</span>
-            </div>
-            <div class="summary-section">
-                <span class="summary-label">Duration:</span>
-                <span class="summary-value">{{ duration }} Hours</span>
-            </div>
-            <div class="summary-section">
-                <span class="summary-label">Aircraft ID:</span>
-                <span class="summary-value">#{{ plane_id }}</span>
+<body>
+    <main class="container">
+        <section class="card mt-xl m-auto" style="max-width: 600px;">
+            <div class="card-header text-center">
+                <h1 class="card-title">Flight Manifest Created</h1>
+                <p class="text-muted mb-sm">Flight ID: #{{ flight_id }}</p>
             </div>
 
-            <div class="pricing-box">
-                <div style="font-weight: bold; color: #166534; margin-bottom: 10px;">Ticket Pricing</div>
-                <div class="price-row">
-                    <span class="price-label">Economy Class:</span>
-                    <span class="price-val">${{ economy_price }}</span>
+            <div class="card-body">
+                <div class="summary-section">
+                    <span class="summary-label">Route:</span>
+                    <span class="summary-value text-primary" style="font-size: 1.2rem;">{{ origin }} ➔ {{ dest }}</span>
                 </div>
-                <div class="price-row">
-                    <span class="price-label">Business Class:</span>
-                    <span class="price-val">${{ business_price }}</span>
+                <div class="summary-section">
+                    <span class="summary-label">Departure:</span>
+                    <span class="summary-value">{{ departure_time }}</span>
+                </div>
+                <div class="summary-section">
+                    <span class="summary-label">Duration:</span>
+                    <span class="summary-value">{{ duration }} Hours</span>
+                </div>
+                <div class="summary-section">
+                    <span class="summary-label">Aircraft ID:</span>
+                    <span class="summary-value">#{{ plane_id }}</span>
+                </div>
+
+                <div class="alert alert-success mt-lg">
+                    <div style="font-weight: bold; margin-bottom: var(--spacing-sm);">Ticket Pricing</div>
+                    <div class="flex justify-between mb-sm">
+                        <span>Economy Class:</span>
+                        <span style="font-weight: bold;">${{ economy_price }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Business Class:</span>
+                        <span style="font-weight: bold;">${{ business_price }}</span>
+                    </div>
+                </div>
+
+                <div class="card mt-md" style="background-color: var(--color-gray-50);">
+                    <div class="card-header">
+                        <h3 class="card-title" style="font-size: var(--font-size-lg); margin-bottom: 0;">Assigned Crew</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-md">
+                            <strong>Pilots:</strong>
+                            <span class="text-muted">
+                                {% for p in pilots %}{{ p[0] }} {{ p[1] }}{% if not loop.last %}, {% endif %}{% endfor %}
+                            </span>
+                        </div>
+                        <div>
+                            <strong>Attendants:</strong>
+                            <span class="text-muted">
+                                {% for s in stewards %}{{ s[0] }} {{ s[1] }}{% if not loop.last %}, {% endif %}{% endfor %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-lg">
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary w-full">Back to Dashboard</a>
                 </div>
             </div>
-
-            <div class="crew-box">
-                <div class="crew-title">Assigned Crew</div>
-                <div style="margin-bottom: 10px;">
-                    <strong style="color: #444;">Pilots:</strong>
-                    <span style="color: #666;">
-                        {% for p in pilots %}{{ p[0] }} {{ p[1] }}{% if not loop.last %}, {% endif %}{% endfor %}
-                    </span>
-                </div>
-                <div>
-                    <strong style="color: #444;">Attendants:</strong>
-                    <span style="color: #666;">
-                        {% for s in stewards %}{{ s[0] }} {{ s[1] }}{% if not loop.last %}, {% endif %}{% endfor %}
-                    </span>
-                </div>
-            </div>
-
-            <a href="{{ url_for('admin_dashboard') }}" class="btn-dashboard">Back to Dashboard</a>
-        </div>
-    </section>
-</main>
-
+        </section>
+    </main>
 </body>
 </html>
