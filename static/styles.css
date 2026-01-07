@@ -1239,7 +1239,7 @@ body.landing-page {
     overflow: hidden;
 }
 
-/*LOCATION */
+
 .logo-container {
     position: absolute;
     top: 30px;
@@ -1319,3 +1319,80 @@ body.landing-page {
     color: white;
     border-color: #2c3e50;
 }
+
+body.report-page {
+    background-color: #f4f6f8;
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+.page-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.back-btn {
+    display: inline-block;
+    text-decoration: none;
+    background-color: white;
+    color: #333;
+    border: 1px solid #ccc;
+    padding: 10px 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.back-btn:hover {
+    background-color: #e2e6ea;
+}
+
+.chart-card {
+    background-color: white;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    text-align: center;
+    border: 1px solid #ddd;
+}
+
+.chart-title {
+    margin-top: 0;
+    margin-bottom: 30px;
+    color: #2c3e50;
+}
+
+.executive-summary {
+    background-color: #eef7fe;
+    border-left: 5px solid #2196F3;
+    padding: 15px;
+    margin-bottom: 25px;
+    text-align: left;
+    border-radius: 4px;
+    color: #333;
+}
+
+.executive-summary h5 {
+    margin: 0 0 10px 0;
+    color: #1565C0;
+    font-size: 1.1em;
+    text-transform: uppercase;
+}
+
+.chart-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+    border: 1px solid #eee;
+}
+
+.no-data-msg {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 15px;
+    border: 1px solid #ffeeba;
+    border-radius: 5px;
+}
+

@@ -427,7 +427,7 @@ def get_flight_occupancy_report() -> List[Dict]:
             SELECT 
                 f.ID,
                 CONCAT(f.Path_Origin_Airport, '-', f.Path_Dest_Airport) AS Route,
-                DATE_FORMAT(f.Departure_DateTime, '%d/%m/%Y') AS Flight_Date,
+                DATE_FORMAT(f.Departure_DateTime, '%d/%m/%Y %H:%i') AS Flight_Date,
                 COUNT(a.Order_ID) AS Passengers_Count,
                 (p.Economy_Capacity + p.Business_Capacity) AS Total_Seats,
                 ROUND((COUNT(a.Order_ID) / (p.Economy_Capacity + p.Business_Capacity)) * 100, 2) AS Occupancy_Percentage
@@ -714,3 +714,48 @@ def add_crew_member(data, role):
 
     return member_id
 
+
+def get_aircraft_activity_report():
+    with get_db_connection() as cursor:
+        query = """
+        WITH PlaneRoutes AS (
+            SELECT 
+                f.Plane_ID, 
+                f.Path_Origin_Airport, 
+                f.Path_Dest_Airport,
+                COUNT(*) AS Frequency,
+                ROW_NUMBER() OVER (PARTITION BY f.Plane_ID ORDER BY COUNT(*) DESC, f.Path_Dest_Airport ASC) AS RouteRank
+            FROM flight f
+            WHERE f.is_active = 1 
+              AND f.Departure_DateTime >= DATE_SUB(NOW(), INTERVAL 30 DAY) 
+            GROUP BY f.Plane_ID, f.Path_Origin_Airport, f.Path_Dest_Airport
+        )
+        SELECT 
+            p.ID AS Plane_ID,
+            p.Manufacturer,
+            COUNT(CASE WHEN f.is_active = 1 THEN 1 END) AS Flights_Performed,
+            COUNT(CASE WHEN f.is_active = 0 THEN 1 END) AS Flights_Cancelled,
+            ROUND((SUM(CASE WHEN f.is_active = 1 THEN pa.Duration ELSE 0 END) / 720.0) * 100, 2) AS Utilization_Rate_Percent,
+            COALESCE(MAX(CASE WHEN pr.RouteRank = 1 THEN CONCAT(pr.Path_Origin_Airport, '-', pr.Path_Dest_Airport) END), 'No Flights') AS Dominant_Route
+        FROM plane p
+        LEFT JOIN flight f ON p.ID = f.Plane_ID AND f.Departure_DateTime >= DATE_SUB(NOW(), INTERVAL 30 DAY) 
+        LEFT JOIN path pa ON f.Path_Dest_Airport = pa.Dest_Airport 
+                          AND f.Path_Origin_Airport = pa.Origin_Airport 
+                          AND f.Path_Clock_Duration = pa.Clock_Duration
+        LEFT JOIN PlaneRoutes pr ON p.ID = pr.Plane_ID
+        GROUP BY p.ID, p.Manufacturer
+        ORDER BY Utilization_Rate_Percent DESC;
+        """
+        cursor.execute(query)
+        results = cursor.fetchall()
+
+        data = []
+        for row in results:
+            data.append({
+                "plane_id": f"Plane {row[0]} ({row[1]})",
+                "flights": row[2],
+                "cancelled": row[3],
+                "utilization": float(row[4]) if row[4] else 0,
+                "route": row[5]
+            })
+        return data
