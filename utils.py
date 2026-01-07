@@ -366,6 +366,7 @@ def create_order_with_seats(flight_id: int, selected_seats: list, total_price: f
         return new_order_id
 
 
+
 def update_active_orders_to_completed() -> int:
     """
     Fetches all orders with status 'Active', joins with Flight table,
@@ -409,3 +410,215 @@ def update_active_orders_to_completed() -> int:
         except Exception as e:
             print(f"Database Error during order status update: {e}")
             return 0
+
+def get_available_resources(origin, dest, departure_time):
+    """
+    Fetches resources based on three logic tiers:
+    1. NEW: Resources with no flight history.
+    2. IDLE: Resources with no flights in the last 72 hours.
+    3. ACTIVE: Resources that landed at the 'origin' airport.
+    """
+    resources = {'planes': [], 'pilots': [], 'attendants': []}
+    global_buffer = 72
+
+    with get_db_connection() as cursor:
+        # --- 1. PLANES QUERY (Updated to include Model and Size) ---
+        query_planes = """
+            SELECT p.ID, p.Size FROM plane p
+            WHERE p.ID NOT IN (
+                -- Plane cannot be in flight during the selected departure
+                SELECT Plane_ID FROM flight 
+                WHERE (Departure_DateTime <= %s AND Arrival_DateTime >= %s)
+            )
+            AND (
+                p.ID NOT IN (SELECT DISTINCT Plane_ID FROM flight)
+                OR 
+                p.ID IN (
+                    SELECT Plane_ID FROM flight f_idle
+                    WHERE f_idle.Arrival_DateTime <= DATE_SUB(%s, INTERVAL %s HOUR)
+                )
+                OR
+                p.ID = (
+                    SELECT f1.Plane_ID FROM flight f1 
+                    WHERE f1.Arrival_DateTime <= %s 
+                    AND f1.Path_Dest_Airport = %s
+                    ORDER BY f1.Arrival_DateTime DESC LIMIT 1
+                )
+            )
+        """
+        cursor.execute(query_planes,
+                       (departure_time, departure_time, departure_time, global_buffer, departure_time, origin))
+        resources['planes'] = cursor.fetchall()
+
+        # --- 2. PILOTS QUERY (Fixed location-locking logic) ---
+        query_pilots = """
+            SELECT p.ID, p.First_Name, p.Last_Name FROM pilot p
+            WHERE p.ID NOT IN (
+                SELECT Pilot_ID FROM pilot_works_flight pwf
+                JOIN flight f ON pwf.Flight_ID = f.ID
+                WHERE (f.Departure_DateTime <= %s AND f.Arrival_DateTime >= %s)
+            )
+            AND (
+                p.ID NOT IN (SELECT DISTINCT Pilot_ID FROM pilot_works_flight)
+                OR 
+                p.ID IN (
+                    SELECT pwf_idle.Pilot_ID FROM pilot_works_flight pwf_idle
+                    JOIN flight f_idle ON pwf_idle.Flight_ID = f_idle.ID
+                    WHERE f_idle.Arrival_DateTime <= DATE_SUB(%s, INTERVAL %s HOUR)
+                )
+                OR
+                p.ID IN (
+                    SELECT Pilot_ID FROM (
+                        SELECT pwf2.Pilot_ID, f2.Path_Dest_Airport,
+                        ROW_NUMBER() OVER (PARTITION BY pwf2.Pilot_ID ORDER BY f2.Arrival_DateTime DESC) as rnk
+                        FROM pilot_works_flight pwf2
+                        JOIN flight f2 ON pwf2.Flight_ID = f2.ID
+                        WHERE f2.Arrival_DateTime <= %s
+                    ) AS last_p_flights WHERE rnk = 1 AND Path_Dest_Airport = %s
+                )
+            )
+        """
+        cursor.execute(query_pilots,
+                       (departure_time, departure_time, departure_time, global_buffer, departure_time, origin))
+        resources['pilots'] = cursor.fetchall()
+
+        # --- 3. STEWARDS QUERY ---
+        query_stewards = """
+            SELECT s.ID, s.First_Name, s.Last_Name FROM steward s
+            WHERE s.ID NOT IN (
+                SELECT Steward_ID FROM steward_works_flight swf
+                JOIN flight f ON swf.Flight_ID = f.ID
+                WHERE (f.Departure_DateTime <= %s AND f.Arrival_DateTime >= %s)
+            )
+            AND (
+                s.ID NOT IN (SELECT DISTINCT Steward_ID FROM steward_works_flight)
+                OR 
+                s.ID IN (
+                    SELECT swf_idle.Steward_ID FROM steward_works_flight swf_idle
+                    JOIN flight f_idle ON swf_idle.Flight_ID = f_idle.ID
+                    WHERE f_idle.Arrival_DateTime <= DATE_SUB(%s, INTERVAL %s HOUR)
+                )
+                OR
+                s.ID IN (
+                    SELECT Steward_ID FROM (
+                        SELECT swf2.Steward_ID, f2.Path_Dest_Airport,
+                        ROW_NUMBER() OVER (PARTITION BY swf2.Steward_ID ORDER BY f2.Arrival_DateTime DESC) as rnk
+                        FROM steward_works_flight swf2
+                        JOIN flight f2 ON swf2.Flight_ID = f2.ID
+                        WHERE f2.Arrival_DateTime <= %s
+                    ) AS last_s_flights WHERE rnk = 1 AND Path_Dest_Airport = %s
+                )
+            )
+        """
+        cursor.execute(query_stewards,
+                       (departure_time, departure_time, departure_time, global_buffer, departure_time, origin))
+        resources['attendants'] = cursor.fetchall()
+
+    return resources
+
+def create_path(origin, dest, duration, clock_duration, origin_tz, dest_tz):
+    with get_db_connection() as cursor:
+        query = """
+            INSERT INTO path (Origin_Airport, Dest_Airport, Duration, Clock_Duration, 
+                              Origin_Timezone, Dest_Timezone)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(query, (origin, dest, duration, clock_duration, origin_tz, dest_tz))
+
+def get_path_info(origin, dest):
+    with get_db_connection() as cursor:
+        cursor.execute("SELECT Duration, Clock_Duration FROM path WHERE Origin_Airport = %s AND Dest_Airport = %s", (origin, dest))
+        return cursor.fetchone()
+
+def add_new_path(origin, dest, duration, o_tz, d_tz):
+    with get_db_connection() as cursor:
+        query = """
+            INSERT INTO path (Origin_Airport, Dest_Airport, Duration, Origin_Timezone, Dest_Timezone)
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        cursor.execute(query, (origin, dest, duration, o_tz, d_tz))
+
+
+def create_aircraft_with_seats(manufacturer, size, eco_cap, bus_cap, purchase_date):
+    """
+    Handles the database logic for inserting a plane and its seat configuration.
+    Note: Total_Capacity is handled by the DB as a generated column.
+    """
+    with get_db_connection() as cursor:
+        # 1. Insert plane record (Removed Total_Capacity from the list)
+        sql_plane = """
+            INSERT INTO plane (Size, Economy_Capacity, Business_Capacity, Manufacturer, Purchase_Date) 
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        cursor.execute(sql_plane, (size, eco_cap, bus_cap, manufacturer, purchase_date))
+        plane_id = cursor.lastrowid
+
+        # 2. Generate Business Seats (4 per row: A-D)
+        bus_cols = ['A', 'B', 'C', 'D']
+        bus_count = 0
+        current_row = 1
+        while bus_count < bus_cap:
+            for col in bus_cols:
+                if bus_count < bus_cap:
+                    cursor.execute("""
+                        INSERT INTO CLASS (Plane_ID, Type, Row_Num, Column_Letter) 
+                        VALUES (%s, %s, %s, %s)
+                    """, (plane_id, 'Business', current_row, col))
+                    bus_count += 1
+            current_row += 1
+
+        # 3. Generate Economy Seats (6 per row: A-F)
+        eco_cols = ['A', 'B', 'C', 'D', 'E', 'F']
+        eco_count = 0
+        while eco_count < eco_cap:
+            for col in eco_cols:
+                if eco_count < eco_cap:
+                    cursor.execute("""
+                        INSERT INTO CLASS (Plane_ID, Type, Row_Num, Column_Letter) 
+                        VALUES (%s, %s, %s, %s)
+                    """, (plane_id, 'Economy', current_row, col))
+                    eco_count += 1
+            current_row += 1
+
+    return plane_id
+
+
+def add_crew_member(data, role):
+    """
+    Generic function to insert into pilot or steward tables.
+    """
+    # 1. Safe ID conversion
+    raw_id = data.get('id') or data.get('pilot_id')  # Check both common names
+    try:
+        if not raw_id:
+            raise ValueError("ID is missing")
+        member_id = int(str(raw_id).strip())  # Strip spaces and convert
+    except (ValueError, TypeError):
+        raise ValueError(f"Invalid ID: '{raw_id}'. Please enter numbers only.")
+
+    def to_null(val):
+        return val if val and str(val).strip() != "" else None
+
+    # 2. Certification logic
+    is_certified = 1 if data.get('long_flight_cer') else 0
+
+    params = (
+        member_id,
+        data.get('starting_date'),
+        data.get('first_name'),
+        data.get('last_name'),
+        to_null(data.get('city')),
+        to_null(data.get('street')),
+        to_null(data.get('number')),
+        to_null(data.get('phone')),
+        is_certified
+    )
+
+    with get_db_connection() as cursor:
+        sql = f"""
+            INSERT INTO {role} (ID, Starting_Date, First_Name, Last_Name, City, Street, Number, Phone, Long_Flight_Cer)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(sql, params)
+
+    return member_id

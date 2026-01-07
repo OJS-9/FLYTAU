@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Step 1: Define Flight Route - FLYTAU</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+<div class="container">
+    <div class="card p-lg mt-xl">
+        <h2 class="mb-md">Step 1: Define Flight Route</h2>
+        <p class="text-muted mb-lg">Enter the origin and destination codes. If the route is new, you will be prompted to define its details.</p>
+
+        <form action="/validate_route" method="POST">
+            <div class="row mb-md">
+                <div class="col">
+                    <label for="origin" class="form-label">Origin Airport Code (IATA):</label>
+                    <input type="text"
+                           id="origin"
+                           name="origin"
+                           class="form-control text-uppercase"
+                           placeholder="e.g. TLV"
+                           maxlength="3"
+                           pattern="[A-Za-z]{3}"
+                           title="Please enter a 3-letter airport code"
+                           required>
+                </div>
+                <div class="col">
+                    <label for="dest" class="form-label">Destination Airport Code (IATA):</label>
+                    <input type="text"
+                           id="dest"
+                           name="dest"
+                           class="form-control text-uppercase"
+                           placeholder="e.g. JFK"
+                           maxlength="3"
+                           pattern="[A-Za-z]{3}"
+                           title="Please enter a 3-letter airport code"
+                           required>
+                </div>
+            </div>
+
+            <div class="alert alert-info py-sm px-md mb-lg">
+                <small><strong>Note:</strong> System will check if this path already exists in the database.</small>
+            </div>
+
+            <div class="flex justify-between items-center">
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary">Next: Validate Route</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Styling for the manual input to make it look professional */
+    .text-uppercase { text-transform: uppercase; }
+    .row { display: flex; gap: 20px; }
+    .col { flex: 1; }
+    .form-label { display: block; margin-bottom: 8px; font-weight: 600; }
+    .form-control { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 1.1rem; }
+</style>
+</body>
+</html>
