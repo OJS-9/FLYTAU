@@ -2,6 +2,11 @@ from flask import Flask, render_template, request, redirect, session, jsonify, u
 from flask_session import Session
 from datetime import timedelta, datetime
 from utils import *
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import io
+import base64
 
 app = Flask(__name__)
 
@@ -540,7 +545,102 @@ def manage_orders():
 
 @app.route('/view_reports')
 def view_reports():
-    return "Management Reports - Coming Soon"
+    if session.get("user_type") != "manager":
+        return redirect("/login")
+    return render_template("reports_menu.html")
+
+
+@app.route('/reports/employee_hours')
+def report_employee_hours():
+    if session.get("user_type") != "manager":
+        return redirect("/login")
+
+    try:
+        data = get_employee_hours_report()
+    except Exception:
+        data = []
+
+    if not data:
+        return render_template("report_display.html",
+                               report_title="Employee Flight Hours",
+                               chart_url=None)
+
+    names = [row['name'] for row in data]
+    short_hours = [row['short_hours'] for row in data]
+    long_hours = [row['long_hours'] for row in data]
+
+    plt.figure(figsize=(10, 6))
+
+    plt.bar(names, short_hours, label='Short Flights (<=6h)', color='#E67E22')
+    plt.bar(names, long_hours, bottom=short_hours, label='Long Flights (>6h)', color='#2C3E50')
+
+    plt.xlabel('Employees')
+    plt.ylabel('Flight Hours')
+    plt.title('Accumulated Flight Hours per Employee')
+    plt.legend()
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plot_url = base64.b64encode(img.getvalue()).decode()
+    plt.close()
+
+    return render_template("report_display.html",
+                           report_title="Employee Flight Hours",
+                           chart_url=plot_url)
+
+
+@app.route('/reports/flight_occupancy')
+def report_flight_occupancy():
+    if session.get("user_type") != "manager":
+        return redirect("/login")
+
+    try:
+        data = get_flight_occupancy_report()
+    except Exception as e:
+        print(f"Error fetching report: {e}")
+        data = []
+
+    if not data:
+        return render_template("report_display.html",
+                               report_title="Average Flight Occupancy",
+                               chart_url=None)
+
+    labels = [row['flight_label'] for row in data]
+    percentages = [row['percentage'] for row in data]
+
+    plt.figure(figsize=(10, 6))
+
+    bars = plt.bar(labels, percentages, color='#1ABC9C', label='Occupancy %')
+
+    plt.axhline(y=100, color='r', linestyle='--', label='Full Capacity (100%)', alpha=0.7)
+
+    plt.ylabel('Occupancy Percentage (%)')
+    plt.title('Average Occupancy per Completed Flight')
+    plt.ylim(0, 110)
+    plt.legend()
+    plt.grid(axis='y', linestyle='--', alpha=0.5)
+
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width() / 2., height,
+                 f'{height}%',
+                 ha='center', va='bottom')
+
+    plt.tight_layout()
+
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plot_url = base64.b64encode(img.getvalue()).decode()
+    plt.close()
+
+    return render_template("report_display.html",
+                           report_title="Average Flight Occupancy",
+                           chart_url=plot_url)
+
 
 @app.route('/add_plane')
 def add_plane():

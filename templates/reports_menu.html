@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Management Reports - FLYTAU</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <main class="container">
+        <div class="mt-lg">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-ghost">← Back to Dashboard</a>
+        </div>
+
+        <section class="card mt-md m-auto" style="max-width: 600px;">
+            <div class="card-header text-center">
+                <h2 class="card-title">Management Reports</h2>
+                <p class="text-muted">Select a report to view analytics and charts.</p>
+            </div>
+
+            <div class="card-body">
+                <div class="flex flex-column gap-md">
+                    <a href="{{ url_for('report_flight_occupancy') }}" class="btn btn-primary w-full text-left">
+                        1. Average Flight Occupancy
+                    </a>
+
+                    <a href="#" class="btn btn-secondary w-full text-left" onclick="alert('Coming Soon')">
+                        2. Total Revenue Analysis
+                    </a>
+
+                    <a href="{{ url_for('report_employee_hours') }}" class="btn btn-primary w-full text-left">
+                        3. Employee Accumulated Flight Hours
+                    </a>
+
+                    <a href="#" class="btn btn-secondary w-full text-left" onclick="alert('Coming Soon')">
+                        4. Cancellation Rate by Month
+                    </a>
+
+                    <a href="#" class="btn btn-secondary w-full text-left" onclick="alert('Coming Soon')">
+                        5. Monthly Aircraft Activity Summary
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

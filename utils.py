@@ -366,6 +366,97 @@ def create_order_with_seats(flight_id: int, selected_seats: list, total_price: f
         return new_order_id
 
 
+def get_employee_hours_report() -> List[Dict]:
+    with get_db_connection() as cursor:
+        query = """
+            SELECT 
+                Full_Name,
+                Staff_Role,
+                SUM(CASE WHEN Flight_Duration > 6 THEN Flight_Duration ELSE 0 END) AS Long_Flight_Hours,
+                SUM(CASE WHEN Flight_Duration <= 6 THEN Flight_Duration ELSE 0 END) AS Short_Flight_Hours,
+                SUM(Flight_Duration) AS Total_Hours
+            FROM (
+                SELECT 
+                    CONCAT(p.First_Name, ' ', p.Last_Name) AS Full_Name, 
+                    'Pilot' AS Staff_Role, 
+                    pa.Duration AS Flight_Duration
+                FROM pilot p
+                JOIN pilot_works_flight pwf ON p.ID = pwf.Pilot_ID
+                JOIN flight f ON pwf.Flight_ID = f.ID
+                JOIN path pa ON f.Path_Dest_Airport = pa.Dest_Airport 
+                             AND f.Path_Origin_Airport = pa.Origin_Airport 
+                             AND f.Path_Clock_Duration = pa.Clock_Duration
+                WHERE f.Departure_DateTime < NOW()
+
+                UNION ALL
+
+                SELECT 
+                    CONCAT(s.First_Name, ' ', s.Last_Name) AS Full_Name, 
+                    'Steward' AS Staff_Role, 
+                    pa.Duration AS Flight_Duration
+                FROM steward s
+                JOIN steward_works_flight swf ON s.ID = swf.Steward_ID
+                JOIN flight f ON swf.Flight_ID = f.ID
+                JOIN path pa ON f.Path_Dest_Airport = pa.Dest_Airport 
+                             AND f.Path_Origin_Airport = pa.Origin_Airport 
+                             AND f.Path_Clock_Duration = pa.Clock_Duration
+                WHERE f.Departure_DateTime < NOW()
+            ) AS All_Staff_Flights
+            GROUP BY Full_Name, Staff_Role
+            ORDER BY Total_Hours DESC
+        """
+        cursor.execute(query)
+        results = cursor.fetchall()
+
+        report_data = []
+        for row in results:
+            report_data.append({
+                "name": f"{row[0]} ({row[1]})",
+                "role": row[1],
+                "long_hours": float(row[2]),
+                "short_hours": float(row[3]),
+                "total": float(row[4])
+            })
+
+        return report_data
+
+
+def get_flight_occupancy_report() -> List[Dict]:
+    with get_db_connection() as cursor:
+        query = """
+            SELECT 
+                f.ID,
+                CONCAT(f.Path_Origin_Airport, '-', f.Path_Dest_Airport) AS Route,
+                DATE_FORMAT(f.Departure_DateTime, '%d/%m/%Y') AS Flight_Date,
+                COUNT(a.Order_ID) AS Passengers_Count,
+                (p.Economy_Capacity + p.Business_Capacity) AS Total_Seats,
+                ROUND((COUNT(a.Order_ID) / (p.Economy_Capacity + p.Business_Capacity)) * 100, 2) AS Occupancy_Percentage
+            FROM flight f
+            JOIN plane p ON f.Plane_ID = p.ID
+            JOIN `order` o ON f.ID = o.Flight_ID
+            JOIN assigned a ON o.Order_ID = a.Order_ID 
+            WHERE f.Departure_DateTime < NOW() 
+              AND o.Status = 'Completed'
+            GROUP BY f.ID, p.Economy_Capacity, p.Business_Capacity
+            ORDER BY f.Departure_DateTime DESC
+            LIMIT 10;
+        """
+        cursor.execute(query)
+        results = cursor.fetchall()
+
+        report_data = []
+        for row in results:
+            label = f"{row[1]}\n({row[2]})"
+
+            report_data.append({
+                "flight_label": label,
+                "passengers": row[3],
+                "capacity": row[4],
+                "percentage": float(row[5]) if row[5] is not None else 0
+            })
+
+        return report_data
+
 
 def update_active_orders_to_completed() -> int:
     """
@@ -622,3 +713,4 @@ def add_crew_member(data, role):
         cursor.execute(sql, params)
 
     return member_id
+

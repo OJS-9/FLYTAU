@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to FLYTAU</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="landing-page">
+
+    <div class="overlay"></div>
+
+    <div class="landing-container">
+        <div class="landing-content">
+            <h1 class="main-title">FLY<span class="highlight">TAU</span></h1>
+            <p class="subtitle">Your Journey Begins Here.</p>
+
+            <div class="action-buttons">
+                <a href="/login" class="btn btn-landing btn-login">
+                    Login to your account
+                </a>
+                <a href="/register" class="btn btn-landing btn-register">
+                    Create new account
+                </a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

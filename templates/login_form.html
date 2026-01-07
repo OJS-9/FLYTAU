@@ -1,18 +1,38 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>FLYTAU - Home</title>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLYTAU - Welcome</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-  </head>
-  <body>
-    <h1>FLYTAU</h1>
-    {% if error %}
-      <p style="color:red">{{ error }}</p>
-    {% endif %}
-    <form action="/" method="post">
-      <button type="submit" name="login_type" value="login">Log In</button>
-      <button type="submit" name="login_type" value="signup">Sign Up</button>
-      <button type="submit" name="login_type" value="guest">Log In as Guest</button>
-    </form>
-  </body>
+</head>
+<body class="landing-page">
+    <div class="logo-container">
+        <img src="/static/images/background.jpg" alt="FLYTAU Logo" class="corner-logo">
+    </div>
+
+    <div class="landing-container">
+        <div class="landing-content">
+            <h1 class="main-title">FLY<span class="highlight">TAU</span></h1>
+            <p class="subtitle">Elevating Your Travel Experience.</p>
+
+            {% if error %}
+                <p class="error-msg">{{ error }}</p>
+            {% endif %}
+
+            <form method="POST" class="action-buttons-wrapper">
+                <button type="submit" name="login_type" value="login" class="btn-landing btn-primary-landing">
+                    Login
+                </button>
+                <button type="submit" name="login_type" value="signup" class="btn-landing btn-secondary-landing">
+                    Join FLYTAU (Sign Up)
+                </button>
+                <button type="submit" name="login_type" value="guest" class="btn-landing btn-ghost-landing">
+                    Continue as Guest
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
 </html>

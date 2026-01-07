@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ report_title }} - FLYTAU</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <main class="container">
+        <div class="mt-lg">
+            <a href="{{ url_for('view_reports') }}" class="btn btn-ghost">← Back to Reports Menu</a>
+        </div>
+
+        <section class="card mt-md">
+            <div class="card-header text-center">
+                <h2 class="card-title">{{ report_title }}</h2>
+            </div>
+
+            <div class="card-body text-center">
+                {% if chart_url %}
+                    <img src="data:image/png;base64,{{ chart_url }}" alt="Report Chart" style="max-width: 100%; height: auto; border: 1px solid #eee; padding: 10px;">
+                {% else %}
+                    <div class="alert alert-warning">
+                        No data available for this report at the moment.
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+    </main>
+</body>
+</html>
