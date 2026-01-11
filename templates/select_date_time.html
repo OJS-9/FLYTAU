@@ -44,7 +44,6 @@
                 <div class="form-group">
                     <label style="color: #003366; font-weight: bold; display: block; margin-bottom: 8px;">Departure Date & Time</label>
                     <input type="datetime-local" id="departure_input" name="departure_time" class="date-input" required>
-                    <p id="current-time-msg" style="color: #666; font-size: 0.8rem; margin-top: 5px;">Today is: Dec 31, 2025</p>
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 25px;">
@@ -75,7 +74,7 @@
         const now = getNowString();
 
         if (selected <= now) {
-            alert("⚠️ Error: Departure time must be in the future.\n\nToday is Dec 31, 2025. You cannot select Jan 1, 2025 because it already passed!");
+            alert("⚠️ Error: Departure time must be in the future!");
             e.preventDefault();
             return false;
         }

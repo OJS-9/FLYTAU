@@ -8,34 +8,45 @@
 <div class="container">
     <div class="card p-lg mt-xl">
         <h2 class="mb-md">Step 1: Define Flight Route</h2>
-        <p class="text-muted mb-lg">Enter the origin and destination codes. If the route is new, you will be prompted to define its details.</p>
+        <p class="text-muted mb-lg">Select an existing route or toggle to manual input for a new one.</p>
 
-        <form action="/validate_route" method="POST">
-            <div class="row mb-md">
-                <div class="col">
-                    <label for="origin" class="form-label">Origin Airport Code (IATA):</label>
-                    <input type="text"
-                           id="origin"
-                           name="origin"
-                           class="form-control text-uppercase"
-                           placeholder="e.g. TLV"
-                           maxlength="3"
-                           pattern="[A-Za-z]{3}"
-                           title="Please enter a 3-letter airport code"
-                           required>
+        <form action="/validate_route" method="POST" id="routeForm">
+            <div id="selection-mode">
+                <div class="row mb-md">
+                    <div class="col">
+                        <label for="origin_select" class="form-label">Origin Airport:</label>
+                        <select id="origin_select" name="origin" class="form-control">
+                            <option value="" disabled selected>Select Origin...</option>
+                            {% for airport in airports %}
+                                <option value="{{ airport }}">{{ airport }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col">
+                        <label for="dest_select" class="form-label">Destination Airport:</label>
+                        <select id="dest_select" name="dest" class="form-control">
+                            <option value="" disabled selected>Select Destination...</option>
+                            {% for airport in airports %}
+                                <option value="{{ airport }}">{{ airport }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
-                <div class="col">
-                    <label for="dest" class="form-label">Destination Airport Code (IATA):</label>
-                    <input type="text"
-                           id="dest"
-                           name="dest"
-                           class="form-control text-uppercase"
-                           placeholder="e.g. JFK"
-                           maxlength="3"
-                           pattern="[A-Za-z]{3}"
-                           title="Please enter a 3-letter airport code"
-                           required>
+                <button type="button" class="btn btn-ghost mb-md" onclick="toggleMode(true)">+ Add a completely new airport code</button>
+            </div>
+
+            <div id="manual-mode" class="hidden">
+                <div class="row mb-md">
+                    <div class="col">
+                        <label for="origin_manual" class="form-label">New Origin (IATA):</label>
+                        <input type="text" id="origin_manual" name="origin_manual" class="form-control text-uppercase" placeholder="e.g. LHR" maxlength="3">
+                    </div>
+                    <div class="col">
+                        <label for="dest_manual" class="form-label">New Destination (IATA):</label>
+                        <input type="text" id="dest_manual" name="dest_manual" class="form-control text-uppercase" placeholder="e.g. DXB" maxlength="3">
+                    </div>
                 </div>
+                <button type="button" class="btn btn-ghost mb-md" onclick="toggleMode(false)">← Back to existing list</button>
             </div>
 
             <div class="alert alert-info py-sm px-md mb-lg">
@@ -50,13 +61,47 @@
     </div>
 </div>
 
+<script>
+    function toggleMode(isManual) {
+        const selectionDiv = document.getElementById('selection-mode');
+        const manualDiv = document.getElementById('manual-mode');
+
+        // אלמנטים של בחירה
+        const sOrigin = document.getElementById('origin_select');
+        const sDest = document.getElementById('dest_select');
+
+        // אלמנטים של הקלדה
+        const mOrigin = document.getElementById('origin_manual');
+        const mDest = document.getElementById('dest_manual');
+
+        if (isManual) {
+            selectionDiv.classList.add('hidden');
+            manualDiv.classList.remove('hidden');
+            // מעבירים את ה-Name לשדות הידניים כדי שהשרת יקבל אותם
+            sOrigin.name = "unused_origin"; sDest.name = "unused_dest";
+            mOrigin.name = "origin"; mDest.name = "dest";
+            mOrigin.required = true; mDest.required = true;
+            sOrigin.required = false; sDest.required = false;
+        } else {
+            selectionDiv.classList.remove('hidden');
+            manualDiv.classList.add('hidden');
+            // מחזירים את ה-Name לשדות הבחירה
+            sOrigin.name = "origin"; sDest.name = "dest";
+            mOrigin.name = "origin_manual"; mDest.name = "dest_manual";
+            mOrigin.required = false; mDest.required = false;
+            sOrigin.required = true; sDest.required = true;
+        }
+    }
+</script>
+
 <style>
-    /* Styling for the manual input to make it look professional */
+    .hidden { display: none !important; }
     .text-uppercase { text-transform: uppercase; }
     .row { display: flex; gap: 20px; }
     .col { flex: 1; }
     .form-label { display: block; margin-bottom: 8px; font-weight: 600; }
     .form-control { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 1.1rem; }
+    .btn-ghost { color: var(--color-primary); background: transparent; border: none; cursor: pointer; text-decoration: underline; padding: 0; }
 </style>
 </body>
 </html>

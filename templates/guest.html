@@ -6,7 +6,40 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <style>
         .hidden { display: none !important; }
-        /* Styling for the ticket result display */
+
+        /* התאמות עיצוב לטופס הכניסה והטלפונים */
+        .login-card {
+            max-width: 500px;
+            margin: 60px auto;
+        }
+
+        .airport-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            background-color: white;
+            font-size: 1rem;
+            color: #1f2937;
+            height: 42px;
+        }
+
+        .phone-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .btn-danger-small {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 0 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: bold;
+        }
+
         .ticket-info-box {
             margin-top: 20px;
             padding: 20px;
@@ -14,11 +47,13 @@
             border-radius: var(--radius-md);
             background-color: #f9fafb;
         }
+
         .ticket-header {
             border-bottom: 2px solid var(--color-primary);
             margin-bottom: 15px;
             padding-bottom: 5px;
         }
+
         .cancel-warning {
             background-color: #fee2e2;
             color: #b91c1c;
@@ -43,24 +78,46 @@
     <main class="container">
 
         {% if not session.get('guest_email') %}
-        <section class="card mt-xl m-auto" style="max-width: 480px;">
-            <div class="card-header">
-                <h1 class="card-title">Guest Sign-In</h1>
-                <p class="text-muted">Enter your email to continue as a guest</p>
-            </div>
-            <div class="card-body">
-                {% if error %}
-                    <div class="alert alert-error mb-md">{{ error }}</div>
-                {% endif %}
-                <form action="{{ url_for('guest_sign_in_route') }}" method="POST">
-                    <div class="form-group">
-                        <label for="guest-email">Email Address</label>
-                        <input type="email" id="guest-email" name="email" placeholder="example@mail.com" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100 mt-md">Continue to Flights</button>
-                </form>
-            </div>
-        </section>
+        <div class="login-card">
+            <section class="card">
+                <div class="card-header">
+                    <h1 class="card-title">Guest Sign-In</h1>
+                    <p class="text-muted">Enter your details </p>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                        <div class="alert alert-error mb-md">{{ error }}</div>
+                    {% endif %}
+                    <form action="{{ url_for('guest_sign_in_route') }}" method="POST">
+                        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                            <div style="flex: 1;">
+                                <label for="first_name">First Name</label>
+                                <input type="text" id="first_name" name="first_name" class="form-control" placeholder="English only" required>
+                            </div>
+                            <div style="flex: 1;">
+                                <label for="last_name">Last Name</label>
+                                <input type="text" id="last_name" name="last_name" class="form-control" placeholder="English only" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-md">
+                            <label for="guest-email">Email Address</label>
+                            <input type="email" id="guest-email" name="email" class="form-control" placeholder="example@mail.com" value="{{ last_email if last_email else '' }}" required>
+                        </div>
+
+                        <div class="form-group mb-md" id="phone-container">
+                            <label>Phone Number(s)</label>
+                            <div class="phone-row">
+                                <input type="tel" name="phones" class="form-control" placeholder="e.g. 0501234567" required>
+                                <button type="button" class="btn btn-secondary" onclick="addGuestPhoneField()">+</button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 mt-md">Sign IN </button>
+                    </form>
+                </div>
+            </section>
+        </div>
 
         {% else %}
         <nav class="flight-nav">
@@ -71,26 +128,40 @@
 
         <section id="section-book" class="card mt-xl {{ 'hidden' if show_manage else '' }}">
             <div class="card-header">
-                <h1 class="card-title">Welcome, Guest!</h1>
+                <h1 class="card-title">Welcome, {{ session.get('guest_name', 'Guest') }}!</h1>
                 <p class="text-muted">Search for flights to book your next trip.</p>
             </div>
             <div class="card-body">
                 <form id="flight-search-form" class="flight-search-form">
                     <div class="flight-search-fields">
+
                         <div class="flight-field">
                             <label for="origin_airport">Origin</label>
-                            <input type="text" id="origin_airport" name="origin_airport" placeholder="TLV" class="airport-input" required>
+                            <select id="origin_airport" name="origin_airport" class="airport-select" required>
+                                <option value="" disabled selected>Origin</option>
+                                {% for airport in airports %}
+                                    <option value="{{ airport }}">{{ airport }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
+
                         <div class="flight-path-icon">
                             <svg width="60" height="40" viewBox="0 0 60 40">
                                 <path d="M 5 20 Q 30 5, 55 20" stroke="var(--color-primary-light)" stroke-width="2" fill="none" stroke-dasharray="5,5"/>
                                 <path d="M 25 18 L 30 20 L 25 22 L 28 20 Z" fill="var(--color-primary)" transform="translate(5, 0)"/>
                             </svg>
                         </div>
+
                         <div class="flight-field">
                             <label for="destination_airport">Where to?</label>
-                            <input type="text" id="destination_airport" name="destination_airport" placeholder="Where to?" class="airport-input" required>
+                            <select id="destination_airport" name="destination_airport" class="airport-select" required>
+                                <option value="" disabled selected>Destination</option>
+                                {% for airport in airports %}
+                                    <option value="{{ airport }}">{{ airport }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
+
                         <div class="flight-field">
                             <label for="departure_date">Departure</label>
                             <input type="date" id="departure_date" name="departure_date" required>
@@ -162,9 +233,17 @@
     </main>
 
     <script>
-        /**
-         * Toggles visibility between Booking and Management sections
-         */
+        function addGuestPhoneField() {
+            const container = document.getElementById('phone-container');
+            const div = document.createElement('div');
+            div.className = 'phone-row';
+            div.innerHTML = `
+                <input type="tel" name="phones" class="form-control" placeholder="Additional phone">
+                <button type="button" class="btn-danger-small" onclick="this.parentElement.remove()">-</button>
+            `;
+            container.appendChild(div);
+        }
+
         function showTab(tabName) {
             document.getElementById('section-book').classList.toggle('hidden', tabName !== 'book');
             document.getElementById('section-manage').classList.toggle('hidden', tabName !== 'manage');
@@ -172,9 +251,6 @@
             document.getElementById('tab-manage').classList.toggle('active', tabName === 'manage');
         }
 
-        /**
-         * AJAX search logic for finding flights
-         */
         document.getElementById('flight-search-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             const resultsDiv = document.getElementById('search-results');

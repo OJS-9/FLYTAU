@@ -92,29 +92,27 @@ def create_customer_with_phones(
         )
 
 
-def guest_sign_in(email: str) -> None:
-    """
-    Ensure a guest with the given email exists in the Guest table.
-
-    Flow:
-    - If the email already exists in Guest -> do nothing.
-    - If it does not exist -> insert a new row with this email.
-
-    Assumes a table similar to:
-        Guest(Mail VARCHAR PRIMARY KEY, Signup_date DATE, ...)
-    """
+def guest_sign_in(email: str, first_name: str, last_name: str, phones: list) -> None:
     with get_db_connection() as cursor:
-        # Check if guest already exists
         cursor.execute("SELECT Mail FROM Guest WHERE Mail = %s", (email,))
-        if cursor.fetchone():
-            return
+        if not cursor.fetchone():
+            cursor.execute(
+                "INSERT INTO Guest (Mail, first_name, last_name) VALUES (%s, %s, %s)",
+                (email, first_name, last_name)
+            )
+        else:
+            cursor.execute(
+                "UPDATE Guest SET first_name = %s, last_name = %s WHERE Mail = %s",
+                (first_name, last_name, email)
+            )
 
-        # Insert new guest
-        cursor.execute(
-            "INSERT INTO Guest (Mail) VALUES (%s)",
-            (email,),
-        )
-
+        for phone in phones:
+            clean_phone = phone.strip() if hasattr(phone, 'strip') else str(phone)
+            if clean_phone:
+                cursor.execute(
+                    "INSERT IGNORE INTO guest_phone (Mail, phone) VALUES (%s, %s)",
+                    (email, clean_phone)
+                )
 
 def search_flights(origin_airport: str, destination_airport: str, departure_date: str, passengers: int) -> List[Dict]:
     """
@@ -607,14 +605,14 @@ def get_available_resources(origin, dest, departure_time):
 
     return resources
 
-def create_path(origin, dest, duration, clock_duration, origin_tz, dest_tz):
+def create_path(origin, dest, duration, origin_tz, dest_tz):
     with get_db_connection() as cursor:
         query = """
-            INSERT INTO path (Origin_Airport, Dest_Airport, Duration, Clock_Duration, 
+            INSERT INTO path (Origin_Airport, Dest_Airport, Duration, 
                               Origin_Timezone, Dest_Timezone)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (origin, dest, duration, clock_duration, origin_tz, dest_tz))
+        cursor.execute(query, (origin, dest, duration, origin_tz, dest_tz))
 
 def get_path_info(origin, dest):
     with get_db_connection() as cursor:
@@ -714,3 +712,49 @@ def add_crew_member(data, role):
 
     return member_id
 
+
+def process_system_cancellation(flight_id):
+    # כאן אנחנו משתמשים ב-with על הפונקציה שלך שמחזירה cursor
+    with get_db_connection() as cursor:
+        try:
+            # 1. עדכון הטיסה ללא פעילה
+            # (וודא שהרצת ALTER TABLE flight ADD COLUMN is_active TINYINT(1) DEFAULT 1;)
+            print(f"DEBUG: Setting flight {flight_id} as inactive")
+            cursor.execute("UPDATE flight SET is_active = 0 WHERE ID = %s", (flight_id,))
+
+            # 2. עדכון סטטוס ההזמנות
+            print(f"DEBUG: Updating orders status for flight {flight_id}")
+            cursor.execute("""
+                UPDATE `Order` 
+                SET Status = 'System Cancelation', Total_Price = 0 
+                WHERE Flight_ID = %s
+            """, (flight_id,))
+
+            # אין צורך ב-commit() כי הגדרת autocommit=True בפונקציית החיבור!
+
+            print("DEBUG: Success! Changes saved automatically via autocommit.")
+            return True
+
+        except Exception as e:
+            print(f"CRITICAL ERROR in process_system_cancellation: {e}")
+            return False
+
+
+def get_all_airports():
+    """שליפת שדות תעופה לפי מיקום הטור כדי לעקוף שמות עם רווחים"""
+    with get_db_connection() as cursor:
+        try:
+            # אנחנו שולפים את הכל מהטבלה
+            cursor.execute("SELECT * FROM path")
+            rows = cursor.fetchall()
+
+            airports = set()
+            for row in rows:
+                # row[0] ו-row[1] הם בדרך כלל המוצא והיעד
+                if row[0]: airports.add(str(row[0]).strip())
+                if row[1]: airports.add(str(row[1]).strip())
+
+            return sorted(list(airports))
+        except Exception as e:
+            print(f"Error fetching airports: {e}")
+            return []
