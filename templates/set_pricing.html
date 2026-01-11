@@ -5,41 +5,6 @@
     <title>Step 3: Flight Pricing - FLYTAU</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <style>
-        /* עיצוב הדר כחול עם טקסט לבן קריא */
-        .header-blue {
-            background-color: #003366;
-            color: #ffffff !important;
-            padding: 25px;
-            border-radius: 8px 8px 0 0;
-            text-align: center;
-        }
-        .header-blue h1 {
-            color: #ffffff !important;
-            margin: 0;
-            font-size: 24px;
-        }
-        .card {
-            border: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .price-container {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        .input-group {
-            margin-bottom: 15px;
-        }
-        .input-group label {
-            display: block;
-            font-weight: bold;
-            color: #003366;
-            margin-bottom: 8px;
-        }
         .currency-input {
             position: relative;
             display: flex;
@@ -47,76 +12,64 @@
         }
         .currency-input span {
             position: absolute;
-            left: 12px;
-            font-weight: bold;
-            color: #64748b;
+            left: var(--spacing-md);
+            font-weight: var(--font-weight-bold);
+            color: var(--color-text-secondary);
+            z-index: 1;
         }
         .currency-input input {
             width: 100%;
-            padding: 12px 12px 12px 30px;
-            border: 2px solid #e2e8f0;
-            border-radius: 6px;
-            font-size: 16px;
-            outline: none;
-        }
-        .currency-input input:focus {
-            border-color: #0066cc;
+            padding-left: calc(var(--spacing-md) * 2 + 10px);
         }
     </style>
 </head>
-<body style="background-color: #f5f7fa;">
+<body>
+    <main class="container">
+        <section class="card mt-xl m-auto" style="max-width: 500px;">
+            <div class="card-header text-center">
+                <h1 class="card-title">Step 3: Ticket Pricing</h1>
+            </div>
 
-<main class="container">
-    <section class="card mt-xl m-auto" style="max-width: 500px;">
+            <div class="card-body">
+                <p class="text-muted text-center mb-lg">
+                    Define seat prices for the route <strong>{{ origin }} ➔ {{ dest }}</strong>
+                    using Aircraft <strong>#{{ plane_id }}</strong>.
+                </p>
 
-        <div class="header-blue">
-            <h1>Step 3: Ticket Pricing</h1>
-        </div>
+                <form action="/get_available_crew" method="POST">
+                    <input type="hidden" name="origin" value="{{ origin }}">
+                    <input type="hidden" name="dest" value="{{ dest }}">
+                    <input type="hidden" name="departure_time" value="{{ departure_time }}">
+                    <input type="hidden" name="plane_id" value="{{ plane_id }}">
+                    <input type="hidden" name="plane_size" value="{{ plane_size }}">
 
-        <div class="card-body" style="background-color: white; padding: 30px;">
-            <p class="text-muted text-center" style="margin-bottom: 25px;">
-                Define seat prices for the route <strong>{{ origin }} ➔ {{ dest }}</strong>
-                using Aircraft <strong>#{{ plane_id }}</strong>.
-            </p>
+                    <div class="card" style="background-color: var(--color-gray-50);">
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>Economy Class Price</label>
+                                <div class="currency-input">
+                                    <span>$</span>
+                                    <input type="number" name="economy_price" min="1" placeholder="Enter amount" required>
+                                </div>
+                            </div>
 
-            <form action="/get_available_crew" method="POST">
-
-                <input type="hidden" name="origin" value="{{ origin }}">
-                <input type="hidden" name="dest" value="{{ dest }}">
-                <input type="hidden" name="departure_time" value="{{ departure_time }}">
-                <input type="hidden" name="plane_id" value="{{ plane_id }}">
-                <input type="hidden" name="plane_size" value="{{ plane_size }}">
-
-                <div class="price-container">
-                    <div class="input-group">
-                        <label>Economy Class Price</label>
-                        <div class="currency-input">
-                            <span>$</span>
-                            <input type="number" name="economy_price" min="1" placeholder="Enter amount" required>
+                            <div class="form-group">
+                                <label>Business Class Price</label>
+                                <div class="currency-input">
+                                    <span>$</span>
+                                    <input type="number" name="business_price" min="1" placeholder="Enter amount" required>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="input-group" style="margin-top: 20px;">
-                        <label>Business Class Price</label>
-                        <div class="currency-input">
-                            <span>$</span>
-                            <input type="number" name="business_price" min="1" placeholder="Enter amount" required>
-                        </div>
+                    <div class="flex gap-md mt-lg">
+                        <button type="submit" class="btn btn-primary" style="flex: 2;">Next: Assign Crew</button>
+                        <a href="{{ url_for('manage_flights') }}" class="btn btn-ghost" style="flex: 1; text-align: center;">Cancel</a>
                     </div>
-                </div>
-
-                <div style="display: flex; gap: 10px; margin-top: 30px;">
-                    <button type="submit" style="flex: 2; background-color: #0066cc; color: white; border: none; padding: 14px; border-radius: 6px; font-weight: bold; cursor: pointer;">
-                        Next: Assign Crew
-                    </button>
-                    <a href="{{ url_for('manage_flights') }}" style="flex: 1; text-align: center; padding: 14px; color: #666; text-decoration: none; font-weight: 500;">
-                        Cancel
-                    </a>
-                </div>
-            </form>
-        </div>
-    </section>
-</main>
-
+                </form>
+            </div>
+        </section>
+    </main>
 </body>
 </html>

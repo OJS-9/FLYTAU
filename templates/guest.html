@@ -57,7 +57,17 @@
                         <label for="guest-email">Email Address</label>
                         <input type="email" id="guest-email" name="email" placeholder="example@mail.com" required>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100 mt-md">Continue to Flights</button>
+                    <div class="mt-md" style="display: flex; gap: 0.75rem;">
+                        <button type="submit" class="btn btn-primary" style="flex: 1;">
+                            Continue to Flights
+                        </button>
+                        <button type="button"
+                                class="btn btn-secondary"
+                                style="flex: 1;"
+                                onclick="window.location.href='{{ url_for('home') }}'">
+                            Back to Home
+                        </button>
+                    </div>
                 </form>
             </div>
         </section>
@@ -99,8 +109,6 @@
                             <label for="passengers">Passenger</label>
                             <div class="passenger-selector">
                                 <input type="number" id="passengers" name="passengers" value="1" min="1" max="9" class="passenger-input" required>
-                                <span class="seat-icon">🪑</span>
-                                <span class="dropdown-chevron">▼</span>
                             </div>
                         </div>
                     </div>
@@ -109,6 +117,15 @@
                     </div>
                 </form>
                 <div id="search-results" class="search-results hidden"></div>
+
+                <!-- Future Flights Section -->
+                <div id="future-flights-section" style="margin-top: 2rem; border-top: 1px solid #e5e7eb; padding-top: 1.5rem;">
+                    <h2 style="margin-bottom: 1rem;">All Upcoming Flights</h2>
+                    <div id="future-flights-list" class="flight-results-list">
+                        <p class="text-muted">Loading upcoming flights...</p>
+                    </div>
+                    <div id="future-flights-pagination" style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1.5rem;"></div>
+                </div>
             </div>
         </section>
 
@@ -172,10 +189,110 @@
             document.getElementById('tab-manage').classList.toggle('active', tabName === 'manage');
         }
 
+        // Future flights loading and rendering functions
+        async function loadFutureFlights(page) {
+            const flightsList = document.getElementById('future-flights-list');
+            const paginationDiv = document.getElementById('future-flights-pagination');
+            
+            if (!flightsList) return; // Only load if section exists (guest is signed in)
+            
+            flightsList.innerHTML = '<p class="text-muted">Loading upcoming flights...</p>';
+            if (paginationDiv) paginationDiv.innerHTML = '';
+
+            try {
+                const response = await fetch(`/get_future_flights?page=${page}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    flightsList.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+                } else {
+                    renderFutureFlights(data);
+                    renderPagination(data);
+                }
+            } catch (error) {
+                flightsList.innerHTML = `<div class="alert alert-error">An error occurred while loading flights. Please try again.</div>`;
+            }
+        }
+
+        function renderFutureFlights(data) {
+            const flightsList = document.getElementById('future-flights-list');
+            
+            if (!flightsList) return;
+            
+            if (!data.flights || data.flights.length === 0) {
+                flightsList.innerHTML = '<p class="text-muted">No upcoming flights available.</p>';
+                return;
+            }
+
+            let html = '<div class="flight-results-list">';
+            data.flights.forEach(flight => {
+                html += `
+                    <div class="flight-result-card">
+                        <div class="flight-route">
+                            <span class="airport-code-large">${flight.origin_airport}</span>
+                            <span class="flight-arrow">→</span>
+                            <span class="airport-code-large">${flight.destination_airport}</span>
+                        </div>
+                        <div class="flight-details">
+                            <p><strong>Departure:</strong> ${flight.departure_datetime}</p>
+                            <p><strong>Arrival:</strong> ${flight.arrival_datetime}</p>
+                            <p><strong>Economy:</strong> $${flight.economy_seat_price}</p>
+                            <p><strong>Business:</strong> $${flight.business_seat_price}</p>
+                            <button class="btn btn-primary btn-sm" onclick="location.href='/select_seat?flight_id=${flight.flight_id}'">Select</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            flightsList.innerHTML = html;
+        }
+
+        function renderPagination(data) {
+            const paginationDiv = document.getElementById('future-flights-pagination');
+            
+            if (!paginationDiv) return;
+            
+            if (data.total_pages <= 1) {
+                paginationDiv.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            
+            // Previous button
+            if (data.page > 1) {
+                html += `<button class="btn btn-secondary btn-sm" onclick="loadFutureFlights(${data.page - 1})">Previous</button>`;
+            } else {
+                html += `<button class="btn btn-secondary btn-sm" disabled>Previous</button>`;
+            }
+
+            // Page indicator
+            html += `<span style="padding: 0 1rem;">Page ${data.page} of ${data.total_pages}</span>`;
+
+            // Next button
+            if (data.page < data.total_pages) {
+                html += `<button class="btn btn-secondary btn-sm" onclick="loadFutureFlights(${data.page + 1})">Next</button>`;
+            } else {
+                html += `<button class="btn btn-secondary btn-sm" disabled>Next</button>`;
+            }
+
+            paginationDiv.innerHTML = html;
+        }
+
+        // Load future flights on page load (only if guest is signed in)
+        document.addEventListener('DOMContentLoaded', function() {
+            const flightSearchForm = document.getElementById('flight-search-form');
+            if (flightSearchForm) {
+                loadFutureFlights(1);
+            }
+        });
+
         /**
          * AJAX search logic for finding flights
          */
-        document.getElementById('flight-search-form').addEventListener('submit', async function(e) {
+        const flightSearchForm = document.getElementById('flight-search-form');
+        if (flightSearchForm) {
+            flightSearchForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             const resultsDiv = document.getElementById('search-results');
             resultsDiv.classList.remove('hidden');
@@ -215,10 +332,17 @@
                 } else {
                     resultsDiv.innerHTML = '<p class="text-muted">No flights found.</p>';
                 }
+                
+                // Ensure future flights section is visible below search results
+                const futureFlightsSection = document.getElementById('future-flights-section');
+                if (futureFlightsSection) {
+                    futureFlightsSection.style.display = '';
+                }
             } catch (error) {
                 resultsDiv.innerHTML = `<div class="alert alert-error">An error occurred during search.</div>`;
             }
-        });
+            });
+        }
     </script>
 </body>
 </html>

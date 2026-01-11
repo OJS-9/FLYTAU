@@ -41,7 +41,7 @@ def home():
             return redirect("/signup")
         return render_template("login_form.html", error="Please select an option")
     else:
-         return render_template("login_form.html")
+         return render_template("home.html")
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -343,6 +343,33 @@ def search_flights_route():
         print(f"Database Error: {e}")
         return jsonify({"error": "An error occurred while searching for flights. Please try again."}), 500
 
+@app.route("/get_future_flights", methods=["GET"])
+def get_future_flights_route():
+    """
+    Handle requests for all future flights with pagination.
+    Returns paginated list of future flights with at least 1 available seat.
+    """
+    # Check if user is logged in as customer or guest
+    user_type = session.get("user_type")
+    if user_type not in ["customer", "guest"]:
+        return jsonify({"error": "You must be signed in (as guest or customer) to view flights."}), 401
+
+    # Get page parameter, default to 1
+    try:
+        page = int(request.args.get("page", 1))
+        if page < 1:
+            page = 1
+    except ValueError:
+        page = 1
+
+    try:
+        result = get_all_future_flights(page=page, per_page=10)
+        return jsonify(result)
+    except Exception as e:
+        # Log the internal error and return a generic user-friendly message
+        print(f"Database Error: {e}")
+        return jsonify({"error": "An error occurred while fetching future flights. Please try again."}), 500
+
 @app.route("/manage_reservations")
 def manage_reservations():
     order_id = request.args.get('order_id')
@@ -592,6 +619,77 @@ def report_employee_hours():
                            chart_url=plot_url)
 
 
+@app.route('/reports/total_revenue')
+def report_total_revenue():
+    if session.get("user_type") != "manager":
+        return redirect("/login")
+
+    try:
+        data = get_total_revenue_report()
+    except Exception as e:
+        print(f"Error fetching total revenue report: {e}")
+        data = []
+
+    if not data:
+        return render_template("report_display.html",
+                               report_title="Total Revenue Analysis",
+                               chart_url=None)
+
+    labels = [
+        f"{row['plane_size']} / {row['manufacturer']} / {row['class_type']}"
+        for row in data
+    ]
+    revenues = [row['total_revenue'] for row in data]
+
+    # Predefined colors per specific plane/manufacturer/class combination
+    label_colors = {
+        "Large / Boeing / Economy": "#3498DB",
+        "Large / Boeing / Business": "#5DADE2",
+        "Small / Boeing / Economy": "#21618C",
+        "Large / Airbus / Economy": "#E74C3C",
+        "Large / Airbus / Business": "#EC7063",
+        "Small / Airbus / Economy": "#922B21",
+        "Large / Dassault / Economy": "#27AE60",
+        "Large / Dassault / Business": "#52BE80",
+        "Small / Dassault / Economy": "#196F3D",
+    }
+
+    bar_colors = [label_colors.get(label, "#7F8C8D") for label in labels]
+
+    plt.figure(figsize=(10, 6))
+
+    bars = plt.bar(labels, revenues, color=bar_colors, label='Total Revenue')
+
+    plt.xlabel('Plane Size / Manufacturer / Class')
+    plt.ylabel('Total Revenue')
+    plt.title('Total Revenue by Plane Size, Manufacturer & Class')
+    plt.xticks(rotation=45, ha='right')
+    plt.grid(axis='y', linestyle='--', alpha=0.5)
+    plt.tight_layout()
+
+    # Annotate bars with revenue values (rounded, thousands separated)
+    for bar, value in zip(bars, revenues):
+        height = bar.get_height()
+        plt.text(
+            bar.get_x() + bar.get_width() / 2.0,
+            height,
+            f"{value:,.0f}",
+            ha='center',
+            va='bottom',
+            fontsize=8,
+        )
+
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plot_url = base64.b64encode(img.getvalue()).decode()
+    plt.close()
+
+    return render_template("report_display.html",
+                           report_title="Total Revenue Analysis",
+                           chart_url=plot_url)
+
+
 @app.route('/reports/flight_occupancy')
 def report_flight_occupancy():
     if session.get("user_type") != "manager":
@@ -639,6 +737,55 @@ def report_flight_occupancy():
 
     return render_template("report_display.html",
                            report_title="Average Flight Occupancy",
+                           chart_url=plot_url)
+
+
+@app.route('/reports/cancellation_rate')
+def report_cancellation_rate():
+    if session.get("user_type") != "manager":
+        return redirect("/login")
+
+    try:
+        data = get_cancellation_rate_report()
+    except Exception as e:
+        print(f"Error fetching cancellation report: {e}")
+        data = []
+
+    if not data:
+        return render_template("report_display.html",
+                               report_title="Cancellation Rate by Month",
+                               chart_url=None)
+
+    labels = [row['label'] for row in data]
+    rates = [row['rate'] for row in data]
+
+    plt.figure(figsize=(10, 6))
+
+    bars = plt.bar(labels, rates, color='#E74C3C', label='Cancellation Rate (%)')
+
+    plt.ylabel('Cancellation Rate (%)')
+    plt.title('Customer Cancellation Rate by Month')
+    plt.ylim(0, max(rates) * 1.2 if rates else 1)
+    plt.legend()
+    plt.grid(axis='y', linestyle='--', alpha=0.5)
+    plt.xticks(rotation=45, ha='right')
+
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width() / 2., height,
+                 f'{height:.1f}%',
+                 ha='center', va='bottom', fontsize=8)
+
+    plt.tight_layout()
+
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plot_url = base64.b64encode(img.getvalue()).decode()
+    plt.close()
+
+    return render_template("report_display.html",
+                           report_title="Cancellation Rate by Month",
                            chart_url=plot_url)
 
 

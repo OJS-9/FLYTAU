@@ -4,88 +4,220 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - FLYTAU</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#007B8F",
+                        secondary: "#0B253A",
+                        "background-light": "#F3F7F9",
+                        "background-dark": "#0F172A",
+                        "surface-light": "#FFFFFF",
+                        "surface-dark": "#1E293B",
+                    },
+                    fontFamily: {
+                        display: ["Montserrat", "sans-serif"],
+                        body: ["Montserrat", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+    </style>
 </head>
-<body>
-    <main class="container">
-        <section class="card mt-xl m-auto" style="max-width: 500px;">
-            <div class="card-header">
-                <h1 class="card-title">Create Account</h1>
-                <p class="text-muted">Register to start booking your flights</p>
+<body class="bg-background-light dark:bg-background-dark text-secondary dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
+    <nav class="w-full bg-surface-light dark:bg-surface-dark shadow-sm py-4 px-6 fixed top-0 z-50 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <img src="{{ url_for('static', filename='images/flytau_logo.png') }}" alt="FLYTAU Logo" class="h-10 w-auto">
             </div>
+        </div>
+    </nav>
+    <main class="flex-grow flex items-center justify-center relative pt-24 pb-12 px-4">
+        <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+            <div class="absolute -top-20 -right-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+            <div class="absolute top-40 -left-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-0 right-1/4 w-full h-1/2 bg-gradient-to-t from-white/50 to-transparent dark:from-background-dark dark:to-transparent"></div>
+        </div>
+        <div class="max-w-2xl w-full z-10 flex flex-col items-center space-y-8">
+            <div class="flex flex-col items-center animate-float">
+                <img src="{{ url_for('static', filename='images/flytau_logo.png') }}" alt="FLYTAU Logo" class="h-24 w-auto">
+            </div>
+            <div class="w-full bg-surface-light dark:bg-surface-dark p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 transition-colors duration-300">
+                <div class="mb-8 text-center">
+                    <h2 class="text-2xl font-bold text-secondary dark:text-white">Sign Up for FLYTAU</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Create your account to start booking flights.</p>
+                </div>
 
-            <div class="card-body">
                 {% if error %}
-                    <div class="alert alert-error mb-md">{{ error }}</div>
+                    <div class="mb-5 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm">
+                        {{ error }}
+                    </div>
                 {% endif %}
 
-                <form action="{{ url_for('signup') }}" method="POST">
-                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <div style="flex: 1;">
-                            <label for="first_name">First Name</label>
-                            <input type="text" id="first_name" name="first_name" value="{{ form_data.first_name if form_data else '' }}" required>
+                <form action="{{ url_for('signup') }}" method="POST" class="space-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="first_name">First Name</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="material-icons text-gray-400 text-sm">person</span>
+                                </div>
+                                <input class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" id="first_name" name="first_name" placeholder="John" value="{{ form_data.first_name if form_data else '' }}" required type="text"/>
+                            </div>
                         </div>
-                        <div style="flex: 1;">
-                            <label for="last_name">Last Name</label>
-                            <input type="text" id="last_name" name="last_name" value="{{ form_data.last_name if form_data else '' }}" required>
-                        </div>
-                    </div>
-
-                    <div class="form-group mb-md">
-                        <label for="email">Email Address</label>
-                        <input type="email" id="email" name="email" value="{{ form_data.email if form_data else '' }}" required>
-                    </div>
-
-                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <div style="flex: 1;">
-                            <label for="passport_num">Passport Number</label>
-                            <input type="text" id="passport_num" name="passport_num" value="{{ form_data.passport_num if form_data else '' }}" required>
-                        </div>
-                        <div style="flex: 1;">
-                            <label for="b_date">Birth Date</label>
-                            <input type="date" id="b_date" name="b_date" value="{{ form_data.b_date if form_data else '' }}" required>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="last_name">Last Name</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="material-icons text-gray-400 text-sm">person_outline</span>
+                                </div>
+                                <input class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" id="last_name" name="last_name" placeholder="Doe" value="{{ form_data.last_name if form_data else '' }}" required type="text"/>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-group mb-md" id="phone-container">
-                        <label>Phone Number(s)</label>
-                        <div style="display: flex; gap: 5px; margin-bottom: 5px;">
-                            <input type="tel" name="phones" placeholder="e.g. 0501234567" required>
-                            <button type="button" class="btn btn-secondary" onclick="addPhoneField()">+</button>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="email">Email Address</label>
+                        <div class="mt-1 relative rounded-md shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="material-icons text-gray-400 text-sm">email</span>
+                            </div>
+                            <input class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" id="email" name="email" placeholder="john.doe@example.com" value="{{ form_data.email if form_data else '' }}" required type="email"/>
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                        <div style="flex: 1;">
-                            <label for="password">Password</label>
-                            <input type="password" id="password" name="password" required>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="passport_num">Passport Number</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="material-icons text-gray-400 text-sm">card_membership</span>
+                                </div>
+                                <input class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" id="passport_num" name="passport_num" placeholder="A12345678" value="{{ form_data.passport_num if form_data else '' }}" required type="text"/>
+                            </div>
                         </div>
-                        <div style="flex: 1;">
-                            <label for="confirm_password">Confirm Password</label>
-                            <input type="password" id="confirm_password" name="confirm_password" required>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="b_date">Birth Date</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="material-icons text-gray-400 text-sm">calendar_today</span>
+                                </div>
+                                <input class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" id="b_date" name="b_date" value="{{ form_data.b_date if form_data else '' }}" required type="date"/>
+                            </div>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100">Register</button>
+                    <div id="phone-container">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number(s)</label>
+                        <div class="space-y-2" id="phone-fields">
+                            <div class="flex gap-2">
+                                <div class="flex-1 relative rounded-md shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="material-icons text-gray-400 text-sm">phone</span>
+                                    </div>
+                                    <input class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" type="tel" name="phones" placeholder="e.g. 0501234567" required/>
+                                </div>
+                                <button type="button" class="px-4 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors flex items-center justify-center" onclick="addPhoneField()">
+                                    <span class="material-icons text-sm">add</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="password">Password</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="material-icons text-gray-400 text-sm">lock</span>
+                                </div>
+                                <input class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" id="password" name="password" placeholder="••••••••" required type="password"/>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="confirm_password">Confirm Password</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="material-icons text-gray-400 text-sm">lock_outline</span>
+                                </div>
+                                <input class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" id="confirm_password" name="confirm_password" placeholder="••••••••" required type="password"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <button class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-semibold text-white bg-secondary hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary transition-all hover:-translate-y-0.5" type="submit">
+                            Register
+                        </button>
+                    </div>
                 </form>
 
-                <div class="text-center mt-md">
-                    <p class="small text-muted">Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Already have an account? 
+                        <a class="font-medium text-primary hover:text-opacity-80 transition-colors" href="{{ url_for('login') }}">
+                            Login
+                        </a>
+                    </p>
+                </div>
+
+                <div class="relative py-6">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-200 dark:border-gray-600"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-surface-light dark:bg-surface-dark text-gray-500 dark:text-gray-400">or</span>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <a 
+                        href="{{ url_for('home') }}" 
+                        class="w-full inline-flex justify-center py-2 px-4 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-secondary dark:hover:text-white transition-colors"
+                    >
+                        Back to Home
+                    </a>
                 </div>
             </div>
-        </section>
+        </div>
     </main>
 
     <script>
         function addPhoneField() {
-            const container = document.getElementById('phone-container');
+            const container = document.getElementById('phone-fields');
             const div = document.createElement('div');
-            div.style.display = 'flex';
-            div.style.gap = '5px';
-            div.style.marginBottom = '5px';
+            div.className = 'flex gap-2';
             div.innerHTML = `
-                <input type="tel" name="phones" placeholder="Additional phone">
-                <button type="button" class="btn btn-danger" onclick="this.parentElement.remove()">-</button>
+                <div class="flex-1 relative rounded-md shadow-sm">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="material-icons text-gray-400 text-sm">phone</span>
+                    </div>
+                    <input class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" type="tel" name="phones" placeholder="Additional phone"/>
+                </div>
+                <button type="button" class="px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors flex items-center justify-center" onclick="this.parentElement.remove()">
+                    <span class="material-icons text-sm">remove</span>
+                </button>
             `;
             container.appendChild(div);
         }
