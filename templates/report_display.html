@@ -5,27 +5,32 @@
     <title>{{ report_title }} - FLYTAU</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
-<body>
-    <main class="container">
-        <div class="mt-lg">
-            <a href="{{ url_for('view_reports') }}" class="btn btn-ghost">← Back to Reports Menu</a>
+<body class="report-page">
+
+    <div class="page-wrapper">
+        <a href="/view_reports" class="back-btn">&larr; Back to Menu</a>
+
+        <div class="chart-card">
+            <h2 class="chart-title">{{ report_title }}</h2>
+
+            {% if report_summary %}
+            <div class="executive-summary">
+                <h5>Executive Summary</h5>
+                <p>{{ report_summary }}</p>
+            </div>
+            {% endif %}
+
+            {% if chart_url %}
+                <div class="image-container">
+                    <img src="data:image/png;base64,{{ chart_url }}" alt="Chart" class="chart-img">
+                </div>
+            {% else %}
+                <div class="no-data-msg">
+                    No data available for this report at the moment.
+                </div>
+            {% endif %}
         </div>
+    </div>
 
-        <section class="card mt-md">
-            <div class="card-header text-center">
-                <h2 class="card-title">{{ report_title }}</h2>
-            </div>
-
-            <div class="card-body text-center">
-                {% if chart_url %}
-                    <img src="data:image/png;base64,{{ chart_url }}" alt="Report Chart" style="max-width: 100%; height: auto; border: 1px solid #eee; padding: 10px;">
-                {% else %}
-                    <div class="alert alert-warning">
-                        No data available for this report at the moment.
-                    </div>
-                {% endif %}
-            </div>
-        </section>
-    </main>
 </body>
 </html>

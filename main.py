@@ -663,9 +663,16 @@ def report_employee_hours():
     plot_url = base64.b64encode(img.getvalue()).decode()
     plt.close()
 
+    summary_text = """
+    This chart shows the total flight hours for each crew member, divided by flight length.
+    **Short Flights (Orange, <= 6h)** represent standard routes, while **Long Flights (Dark Blue, > 6h)** require longer rest periods for the crew.
+    This data helps managers prevent fatigue and ensure the workload is balanced fairly among all employees.
+        """
+
     return render_template("report_display.html",
                            report_title="Employee Flight Hours",
-                           chart_url=plot_url)
+                           chart_url=plot_url,
+                           report_summary=summary_text)
 
 
 @app.route('/reports/total_revenue')
@@ -784,9 +791,17 @@ def report_flight_occupancy():
     plot_url = base64.b64encode(img.getvalue()).decode()
     plt.close()
 
+    summary_text = """
+        This report analyzes the occupancy rates of the last 10 completed flights. 
+        The goal is to identify underperforming routes. 
+        A low occupancy rate (below 70%) may indicate a need to adjust pricing or flight frequency. 
+        Currently, the red line represents full capacity (100%), allowing for quick visual assessment of flight efficiency.
+        """
+
     return render_template("report_display.html",
                            report_title="Average Flight Occupancy",
-                           chart_url=plot_url)
+                           chart_url=plot_url,
+                           report_summary=summary_text)
 
 
 @app.route('/reports/cancellation_rate')
@@ -1100,6 +1115,64 @@ def finalize_flight_creation():
         print(f"Finalize Error: {e}")
         return f"System Error: {str(e)}", 500
 
+@app.route('/reports/aircraft_activity')
+def report_aircraft_activity():
+    if session.get("user_type") != "manager":
+        return redirect("/login")
+
+    try:
+        data = get_aircraft_activity_report()
+    except Exception:
+        data = []
+
+    if not data:
+        return render_template("report_display.html", report_title="Aircraft Activity", chart_url=None)
+
+    planes = [d['plane_id'] for d in data]
+    flights = [d['flights'] for d in data]
+    utilization = [d['utilization'] for d in data]
+    routes = [d['route'] for d in data]
+
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+
+    bars = ax1.bar(planes, flights, color='#95a5a6', alpha=0.6, label='Flights Performed')
+    ax1.set_ylabel('Number of Flights', color='#7f8c8d')
+    ax1.tick_params(axis='y', labelcolor='#7f8c8d')
+
+    ax2 = ax1.twinx()
+    ax2.plot(planes, utilization, color='#e74c3c', marker='o', linewidth=2, label='Utilization %')
+    ax2.set_ylabel('Utilization (%)', color='#e74c3c')
+    ax2.tick_params(axis='y', labelcolor='#e74c3c')
+    ax2.set_ylim(0, 100)
+
+    plt.title('Aircraft Activity: Flights vs. Utilization (Last 30 Days)')
+
+    for i, bar in enumerate(bars):
+        height = bar.get_height()
+        if height > 0:
+            ax1.text(bar.get_x() + bar.get_width() / 2., height / 2,
+                     routes[i],
+                     ha='center', va='center', rotation=90, color='black', fontsize=8, fontweight='bold')
+
+    plt.tight_layout()
+
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plot_url = base64.b64encode(img.getvalue()).decode()
+    plt.close()
+
+    summary_text = """
+    This report summarizes fleet efficiency over the last 30 days. 
+    The **Grey Bars** show the total completed flights, while the **Red Line** tracks the aircraft utilization rate (percentage of time spent in the air). 
+    The dominant route for each aircraft is listed inside the bar. Low utilization may indicate maintenance issues or inefficient scheduling.
+    """
+
+    return render_template("report_display.html",
+                           report_title="Aircraft Activity Summary",
+                           chart_url=plot_url,
+                           report_summary=summary_text)
+
 
 @app.route('/confirm_cancelation', methods=['POST'])
 def confirm_cancelation_route():
@@ -1127,3 +1200,5 @@ def confirm_cancelation_route():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
