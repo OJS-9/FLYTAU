@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     {% if session.get('guest_email') %}
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     {% endif %}
@@ -38,6 +39,9 @@
         body {
             font-family: 'Montserrat', sans-serif;
         }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
         @keyframes float {
             0% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
@@ -47,23 +51,6 @@
             animation: float 6s ease-in-out infinite;
         }
         .hidden { display: none !important; }
-
-        /* התאמות עיצוב לטופס הכניסה והטלפונים */
-        .login-card {
-            max-width: 500px;
-            margin: 60px auto;
-        }
-
-        .airport-select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-sm);
-            background-color: white;
-            font-size: 1rem;
-            color: #1f2937;
-            height: 42px;
-        }
 
         .phone-row {
             display: flex;
@@ -76,7 +63,7 @@
             color: white;
             border: none;
             padding: 0 12px;
-            border-radius: var(--radius-sm);
+            border-radius: 0.5rem;
             cursor: pointer;
             font-weight: bold;
         }
@@ -84,13 +71,13 @@
         .ticket-info-box {
             margin-top: 20px;
             padding: 20px;
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-md);
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
             background-color: #f9fafb;
         }
 
         .ticket-header {
-            border-bottom: 2px solid var(--color-primary);
+            border-bottom: 2px solid #007B8F;
             margin-bottom: 15px;
             padding-bottom: 5px;
         }
@@ -99,7 +86,7 @@
             background-color: #fee2e2;
             color: #b91c1c;
             padding: 12px;
-            border-radius: var(--radius-sm);
+            border-radius: 0.5rem;
             margin-bottom: 15px;
             border: 1px solid #fecaca;
         }
@@ -130,13 +117,13 @@
             </div>
         </div>
     </nav>
-        <main class="flex-grow flex items-center justify-center relative pt-20 px-4">
+        <main class="flex-grow flex items-center justify-center relative pt-24 pb-12 px-4">
             <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
                 <div class="absolute -top-20 -right-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
                 <div class="absolute top-40 -left-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
                 <div class="absolute bottom-0 right-1/4 w-full h-1/2 bg-gradient-to-t from-white/50 to-transparent dark:from-background-dark dark:to-transparent"></div>
             </div>
-            <div class="max-w-md w-full z-10 flex flex-col items-center space-y-8 py-12">
+            <div class="max-w-md w-full z-10 flex flex-col items-center space-y-6">
                 <div class="flex flex-col items-center animate-float">
                     <div class="relative w-24 h-24 flex items-center justify-center">
                         <!-- Outer animated rings -->
@@ -153,9 +140,9 @@
                     </div>
                 </div>
                 <div class="w-full bg-surface-light dark:bg-surface-dark p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 transition-colors duration-300">
-                    <div class="mb-8 text-center">
-                        <h2 class="text-2xl font-bold text-secondary dark:text-white">Continue as Guest</h2>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Enter your email to continue as a guest</p>
+                    <div class="mb-6 text-center">
+                        <h2 class="text-2xl font-bold text-secondary dark:text-white">Guest Sign In</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Enter your details to continue your booking.</p>
                     </div>
 
                     {% if error %}
@@ -164,48 +151,54 @@
                         </div>
                     {% endif %}
 
-        {% if not session.get('guest_email') %}
-        <div class="login-card">
-            <section class="card">
-                <div class="card-header">
-                    <h1 class="card-title">Guest Sign-In</h1>
-                    <p class="text-muted">Enter your details </p>
-                </div>
-                <div class="card-body">
-                    {% if error %}
-                        <div class="alert alert-error mb-md">{{ error }}</div>
-                    {% endif %}
-                    <form action="{{ url_for('guest_sign_in_route') }}" method="POST">
-                        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                            <div style="flex: 1;">
-                                <label for="first_name">First Name</label>
-                                <input type="text" id="first_name" name="first_name" class="form-control" placeholder="English only" required>
+                    <form action="{{ url_for('guest_sign_in_route') }}" method="POST" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="first_name">First Name</label>
+                                <input class="mt-1 block w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" id="first_name" name="first_name" placeholder="John" required type="text"/>
                             </div>
-                            <div style="flex: 1;">
-                                <label for="last_name">Last Name</label>
-                                <input type="text" id="last_name" name="last_name" class="form-control" placeholder="English only" required>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="last_name">Last Name</label>
+                                <input class="mt-1 block w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" id="last_name" name="last_name" placeholder="Doe" required type="text"/>
                             </div>
                         </div>
-
-                        <div class="form-group mb-md">
-                            <label for="guest-email">Email Address</label>
-                            <input type="email" id="guest-email" name="email" class="form-control" placeholder="example@mail.com" value="{{ last_email if last_email else '' }}" required>
-                        </div>
-
-                        <div class="form-group mb-md" id="phone-container">
-                            <label>Phone Number(s)</label>
-                            <div class="phone-row">
-                                <input type="tel" name="phones" class="form-control" placeholder="e.g. 0501234567" required>
-                                <button type="button" class="btn btn-secondary" onclick="addGuestPhoneField()">+</button>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="email">Email Address</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="material-icons text-gray-400 text-sm">email</span>
+                                </div>
+                                <input class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" id="email" name="email" placeholder="name@example.com" value="{{ last_email if last_email else '' }}" required type="email"/>
                             </div>
                         </div>
-
-                        <button type="submit" class="btn btn-primary w-100 mt-md">Sign IN </button>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="phone-container">Phone Number(s)</label>
+                            <div id="phone-container" class="mt-1 space-y-2">
+                                <div class="phone-row">
+                                    <div class="relative flex-grow rounded-md shadow-sm">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span class="material-icons text-gray-400 text-sm">phone</span>
+                                        </div>
+                                        <input class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" name="phones" placeholder="e.g. 0501234567" required type="tel"/>
+                                    </div>
+                                    <button type="button" class="inline-flex items-center justify-center p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onclick="addGuestPhoneField()">
+                                        <span class="material-symbols-outlined text-xl">add</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-semibold text-white bg-secondary hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary transition-all hover:-translate-y-0.5 mt-6" type="submit">
+                            Continue
+                        </button>
                     </form>
-                </div>
-            </section>
-        </div>
-
+                    <div class="relative py-6">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-200 dark:border-gray-600"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-2 bg-surface-light dark:bg-surface-dark text-gray-500 dark:text-gray-400">or</span>
+                        </div>
+                    </div>
                     <div class="space-y-3">
                         <a 
                             href="{{ url_for('login') }}" 
@@ -226,6 +219,13 @@
                             Back to Home
                         </a>
                     </div>
+                </div>
+                <div class="flex space-x-6 text-sm text-gray-500 dark:text-gray-400">
+                    <a class="hover:text-primary transition-colors" href="#">Privacy</a>
+                    <span class="text-gray-300 dark:text-gray-600">•</span>
+                    <a class="hover:text-primary transition-colors" href="#">Terms</a>
+                    <span class="text-gray-300 dark:text-gray-600">•</span>
+                    <a class="hover:text-primary transition-colors" href="#">Contact</a>
                 </div>
             </div>
         </main>
@@ -365,8 +365,15 @@
             const div = document.createElement('div');
             div.className = 'phone-row';
             div.innerHTML = `
-                <input type="tel" name="phones" class="form-control" placeholder="Additional phone">
-                <button type="button" class="btn-danger-small" onclick="this.parentElement.remove()">-</button>
+                <div class="relative flex-grow rounded-md shadow-sm">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="material-icons text-gray-400 text-sm">phone</span>
+                    </div>
+                    <input class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" name="phones" placeholder="Additional phone" type="tel"/>
+                </div>
+                <button type="button" class="inline-flex items-center justify-center p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onclick="this.parentElement.remove()">
+                    <span class="material-symbols-outlined text-xl">close</span>
+                </button>
             `;
             container.appendChild(div);
         }
