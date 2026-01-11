@@ -43,25 +43,44 @@
         .animate-float {
             animation: float 6s ease-in-out infinite;
         }
+        /* Ensure bg-secondary buttons have correct colors */
+        button.bg-secondary,
+        button[class*="bg-secondary"] {
+            background-color: rgba(11, 37, 58, 1) !important;
+            border-color: rgba(11, 37, 58, 1) !important;
+        }
     </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-secondary dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
     <nav class="w-full bg-surface-light dark:bg-surface-dark shadow-sm py-4 px-6 fixed top-0 z-50 transition-colors duration-300">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-                <img src="{{ url_for('static', filename='images/flytau_logo.png') }}" alt="FLYTAU Logo" class="h-10 w-auto">
+            <div class="flex items-center space-x-2 text-center">
+                <span class="material-icons text-primary text-3xl transform rotate-45">flight</span>
+                <span class="text-2xl font-bold tracking-tight text-secondary dark:text-white">FLYTAU</span>
             </div>
         </div>
     </nav>
-    <main class="flex-grow flex items-center justify-center relative pt-24 pb-12 px-4">
+    <main class="flex-grow flex items-center justify-center relative pt-20 px-4">
         <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
             <div class="absolute -top-20 -right-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
             <div class="absolute top-40 -left-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
             <div class="absolute bottom-0 right-1/4 w-full h-1/2 bg-gradient-to-t from-white/50 to-transparent dark:from-background-dark dark:to-transparent"></div>
         </div>
-        <div class="max-w-2xl w-full z-10 flex flex-col items-center space-y-8">
+        <div class="max-w-md w-full z-10 flex flex-col items-center space-y-8 py-12">
             <div class="flex flex-col items-center animate-float">
-                <img src="{{ url_for('static', filename='images/flytau_logo.png') }}" alt="FLYTAU Logo" class="h-24 w-auto">
+                <div class="relative w-24 h-24 flex items-center justify-center">
+                    <!-- Outer animated rings -->
+                    <div class="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse"></div>
+                    <div class="absolute w-20 h-20 rounded-full border-t-4 border-l-4 border-primary transform -rotate-12"></div>
+                    <!-- Circular logo container -->
+                    <div class="relative w-20 h-20 rounded-full overflow-hidden shadow-lg bg-white dark:bg-surface-dark">
+                        <img
+                            src="{{ url_for('static', filename='images/flytau_logo.png') }}"
+                            alt="FLYTAU logo"
+                            class="w-full h-full object-contain"
+                        >
+                    </div>
+                </div>
             </div>
             <div class="w-full bg-surface-light dark:bg-surface-dark p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 transition-colors duration-300">
                 <div class="mb-8 text-center">
