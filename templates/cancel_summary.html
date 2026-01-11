@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cancellation Success - FLYTAU</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .header-cancel {
+            background-color: #dc2626; /* אדום לביטול */
+            color: white !important;
+            padding: 30px;
+            border-radius: 8px 8px 0 0;
+            text-align: center;
+        }
+        .header-cancel h1 { color: white !important; margin: 0; font-size: 26px; }
+        .success-card {
+            border: none;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            max-width: 600px;
+            margin: auto;
+            margin-top: 50px;
+            background: white;
+            font-family: sans-serif;
+        }
+        .status-list { padding: 20px; background: #fff; }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .status-item:last-child { border-bottom: none; }
+        .check-icon { color: #059669; font-weight: bold; font-size: 18px; }
+        .info-label { color: #64748b; font-size: 14px; flex-grow: 1; }
+        .info-value { font-weight: 600; color: #1e293b; }
+        .btn-return {
+            display: block;
+            text-align: center;
+            background-color: #003366;
+            color: white;
+            padding: 15px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 20px;
+            border-radius: 6px;
+            transition: opacity 0.2s;
+        }
+        .btn-return:hover { opacity: 0.9; }
+    </style>
+</head>
+<body style="background-color: #f5f7fa;">
+    <main class="container">
+        <section class="success-card">
+            <div class="header-cancel">
+                <h1>Cancellation Confirmed</h1>
+                <p style="margin-top: 10px; opacity: 0.9;">Flight #{{ flight_id }} ({{ origin }} → {{ dest }})</p>
+            </div>
+
+            <div class="status-list">
+                <div class="status-item">
+                    <span class="check-icon">✓</span>
+                    <span class="info-label">Affected Orders:</span>
+                    <span class="info-value">{{ orders_count }} Orders Updated</span>
+                </div>
+                <div class="status-item">
+                    <span class="check-icon">✓</span>
+                    <span class="info-label">Order Status:</span>
+                    <span class="info-value" style="color: #dc2626;">System Cancelation</span>
+                </div>
+                <div class="status-item">
+                    <span class="check-icon">✓</span>
+                    <span class="info-label">Financial Status:</span>
+                    <span class="info-value">Total Price Reset to 0</span>
+                </div>
+                <div class="status-item">
+                    <span class="check-icon">✓</span>
+                    <span class="info-label">Flight Availability:</span>
+                    <span class="info-value">Marked as Inactive</span>
+                </div>
+                <div class="status-item" style="background-color: #f8fafc; border-radius: 4px; margin-top: 10px;">
+                    <span class="check-icon">ℹ</span>
+                    <span class="info-label">Database Record:</span>
+                    <span class="info-value">Archived for History</span>
+                </div>
+
+                <a href="{{ url_for('admin_dashboard') }}" class="btn-return">Return to Manager Dashboard</a>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

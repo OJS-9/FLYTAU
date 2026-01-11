@@ -4,82 +4,62 @@
     <meta charset="UTF-8">
     <title>Step 2: Schedule Flight - FLYTAU</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <style>
-        /* תיקון צבע הכותרת והעיצוב */
-        .header-blue {
-            background-color: #003366;
-            color: #ffffff !important; /* לבן בוהק וקריא */
-            padding: 25px;
-            border-radius: 8px 8px 0 0;
-            text-align: center;
-        }
-        .header-blue h1 {
-            color: #ffffff !important;
-            margin: 0;
-            font-size: 24px;
-        }
-        .card { border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
-        .route-confirmed { font-size: 1.4rem; font-weight: bold; margin: 15px 0; background: #f0f7ff; padding: 12px; border-radius: 8px; border: 1px solid #cce3ff; text-align: center; }
-        .date-input { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 16px; }
-    </style>
 </head>
-<body style="background-color: #f5f7fa;">
-<main class="container">
-    <section class="card mt-xl m-auto" style="max-width: 550px;">
-
-        <div class="header-blue">
-            <h1>Step 2: Scheduling</h1>
-        </div>
-
-        <div class="card-body" style="background-color: white; padding: 30px;">
-            <div class="route-confirmed">
-                {{ origin }} <span style="color: #3b82f6;">✈</span> {{ dest }}
+<body>
+    <main class="container">
+        <section class="card mt-xl m-auto" style="max-width: 550px;">
+            <div class="card-header text-center">
+                <h1 class="card-title">Step 2: Scheduling</h1>
             </div>
-            <p class="text-muted text-center">Route confirmed. Select the departure local time.</p>
-
-            <form id="scheduleForm" action="/get_available_resources" method="POST" class="flex flex-column gap-md">
-                <input type="hidden" name="origin" value="{{ origin }}">
-                <input type="hidden" name="dest" value="{{ dest }}">
 
                 <div class="form-group">
                     <label style="color: #003366; font-weight: bold; display: block; margin-bottom: 8px;">Departure Date & Time</label>
                     <input type="datetime-local" id="departure_input" name="departure_time" class="date-input" required>
-                    <p id="current-time-msg" style="color: #666; font-size: 0.8rem; margin-top: 5px;">Today is: Dec 31, 2025</p>
                 </div>
+                <p class="text-muted text-center mb-lg">Route confirmed. Select the departure local time.</p>
 
-                <div style="display: flex; gap: 10px; margin-top: 25px;">
-                    <button type="submit" style="flex: 2; background-color: #0066cc; color: white; border: none; padding: 14px; border-radius: 6px; font-weight: bold; cursor: pointer;">Next: Check Availability</button>
-                    <a href="{{ url_for('manage_flights') }}" style="flex: 1; text-align: center; padding: 14px; color: #666; text-decoration: none;">Cancel</a>
-                </div>
-            </form>
-        </div>
-    </section>
-</main>
+                <form id="scheduleForm" action="/get_available_resources" method="POST" class="flex flex-column gap-md">
+                    <input type="hidden" name="origin" value="{{ origin }}">
+                    <input type="hidden" name="dest" value="{{ dest }}">
 
-<script>
-    const dateInput = document.getElementById('departure_input');
+                    <div class="form-group">
+                        <label>Departure Date & Time</label>
+                        <input type="datetime-local" id="departure_input" name="departure_time" required>
+                        <p id="current-time-msg" class="text-muted" style="font-size: 0.8rem; margin-top: 5px;">Today is: Dec 31, 2025</p>
+                    </div>
 
-    // פונקציה שמחזירה מחרוזת זמן מקומי בפורמט שהדפדפן דורש (YYYY-MM-DDTHH:mm)
-    function getNowString() {
-        const now = new Date();
-        const offset = now.getTimezoneOffset() * 60000;
-        return new Date(now - offset).toISOString().slice(0, 16);
-    }
+                    <div class="flex gap-md mt-lg">
+                        <button type="submit" class="btn btn-primary" style="flex: 2;">Next: Check Availability</button>
+                        <a href="{{ url_for('manage_flights') }}" class="btn btn-ghost" style="flex: 1; text-align: center;">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
 
-    // הגדרת המינימום בלוח השנה
-    dateInput.min = getNowString();
-
-    // חסימה בזמן שליחה
-    document.getElementById('scheduleForm').onsubmit = function(e) {
-        const selected = dateInput.value; // מחרוזת בפורמט YYYY-MM-DDTHH:mm
-        const now = getNowString();
+    <script>
+        const dateInput = document.getElementById('departure_input');
 
         if (selected <= now) {
-            alert("⚠️ Error: Departure time must be in the future.\n\nToday is Dec 31, 2025. You cannot select Jan 1, 2025 because it already passed!");
+            alert("⚠️ Error: Departure time must be in the future!");
             e.preventDefault();
             return false;
         }
-    };
-</script>
+
+        // הגדרת המינימום בלוח השנה
+        dateInput.min = getNowString();
+
+        // חסימה בזמן שליחה
+        document.getElementById('scheduleForm').onsubmit = function(e) {
+            const selected = dateInput.value; // מחרוזת בפורמט YYYY-MM-DDTHH:mm
+            const now = getNowString();
+
+            if (selected <= now) {
+                alert("⚠️ Error: Departure time must be in the future.\n\nToday is Dec 31, 2025. You cannot select Jan 1, 2025 because it already passed!");
+                e.preventDefault();
+                return false;
+            }
+        };
+    </script>
 </body>
 </html>

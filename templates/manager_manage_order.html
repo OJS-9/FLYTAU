@@ -1,0 +1,51 @@
+<section class="card" style="width: 100%; max-width: 1200px; margin: 20px auto; font-family: sans-serif;">
+    <div class="header-blue" style="background: #003366; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; color: white !important;">Flight Cancellation & Filters</h1>
+    </div>
+
+    <div style="padding: 20px; background: #f1f5f9; border-bottom: 1px solid #cbd5e1;">
+        <form method="GET" action="/manage_orders" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+            <div style="display: flex; flex-direction: column;">
+                <label style="font-size: 12px; margin-bottom: 5px;">Origin</label>
+                <input type="text" name="origin" placeholder="e.g. MXP" value="{{ request.args.get('origin', '') }}" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <div style="display: flex; flex-direction: column;">
+                <label style="font-size: 12px; margin-bottom: 5px;">Destination</label>
+                <input type="text" name="destination" placeholder="e.g. TLV" value="{{ request.args.get('destination', '') }}" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <div style="display: flex; flex-direction: column;">
+                <label style="font-size: 12px; margin-bottom: 5px;">Departure Date</label>
+                <input type="date" name="departure_date" value="{{ request.args.get('departure_date', '') }}" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <button type="submit" style="background: #003366; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">Filter Results</button>
+            <a href="/manage_orders" style="text-decoration: none; color: #666; font-size: 14px; margin-left: 10px;">Reset</a>
+        </form>
+    </div>
+
+    <div class="card-body" style="padding: 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #e2e8f0; text-align: left;">
+                    <th style="padding: 15px;">Flight ID</th>
+                    <th style="padding: 15px;">Route</th>
+                    <th style="padding: 15px;">Departure</th>
+                    <th style="padding: 15px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for flight in flights %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 15px; font-weight: bold;">{{ flight[0] }}</td> <td style="padding: 15px;">{{ flight[2] }} → {{ flight[3] }}</td> <td style="padding: 15px;">{{ flight[1] }}</td> <td style="padding: 15px;">
+                        <form action="/confirm_cancelation" method="POST" onsubmit="return confirm('Delete Flight {{ flight[0] }}?');">
+                            <input type="hidden" name="flight_id" value="{{ flight[0] }}">
+                            <button type="submit" style="background: #dc2626; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                                Cancel Flight
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>

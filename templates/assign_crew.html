@@ -3,97 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <title>Step 4: Assign Crew - FLYTAU</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <style>
-        /* Updated header style with high-contrast white text */
-        .header-blue {
-            background-color: #003366;
-            color: #ffffff !important;
-            padding: 25px;
-            border-radius: 8px 8px 0 0;
+        select[multiple] {
+            min-height: 130px;
         }
-        .header-blue h1 { color: #ffffff !important; margin: 0; font-size: 24px; }
-
-        .info-bar-blue { background-color: #e6f2ff; border-left: 5px solid #0066cc; padding: 15px; margin-bottom: 20px; color: #003366; }
-        select[multiple] { border: 2px solid #e2e8f0; border-radius: 6px; padding: 10px; width: 100%; outline: none; transition: border 0.3s; }
-        select[multiple]:focus { border-color: #0066cc; }
-        option:checked { background-color: #0066cc !important; color: white !important; }
-        .ctrl-note { background-color: #fff3cd; color: #856404; padding: 10px; border-radius: 4px; font-size: 13px; margin-top: 10px; border: 1px solid #ffeeba; text-align: center; }
+        option:checked {
+            background-color: var(--color-primary) !important;
+            color: white !important;
+        }
     </style>
 </head>
-<body style="background-color: #f5f7fa;">
-
-<main class="container">
-    <section class="card mt-xl m-auto" style="max-width: 650px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden;">
-
-        <div class="header-blue text-center">
-            <h1>Step 4: Assign Crew</h1>
-            <p style="margin: 5px 0 0 0; opacity: 0.9;">Plane #{{ plane_id }} (Size: {{ plane_size }})</p>
-        </div>
-
-        <div class="card-body p-xl" style="background-color: white; padding: 30px;">
-            <div class="info-bar-blue">
-                Staffing Requirement: <strong>{{ req_pilots }} Pilots</strong> and <strong>{{ req_stewards }} Attendants</strong>.
+<body>
+    <main class="container">
+        <section class="card mt-xl m-auto" style="max-width: 650px;">
+            <div class="card-header text-center">
+                <h1 class="card-title">Step 4: Assign Crew</h1>
+                <p class="text-muted mb-sm">Plane #{{ plane_id }} (Size: {{ plane_size }})</p>
             </div>
 
-            <form id="crewForm" action="/finalize_flight_creation" method="POST">
-                <input type="hidden" name="origin" value="{{ origin }}">
-                <input type="hidden" name="dest" value="{{ dest }}">
-                <input type="hidden" name="departure_time" value="{{ departure_time }}">
-                <input type="hidden" name="plane_id" value="{{ plane_id }}">
-
-                <input type="hidden" name="economy_price" value="{{ economy_price }}">
-                <input type="hidden" name="business_price" value="{{ business_price }}">
-
-                <div class="form-group mb-md">
-                    <label style="color: #003366; font-weight: bold; display: block; margin-bottom: 8px;">Select Pilots ({{ req_pilots }} required)</label>
-                    <select id="pilot_select" name="pilot_ids" multiple required style="height: 130px;">
-                        {% for pilot in pilots %}
-                        <option value="{{ pilot[0] }}">{{ pilot[1] }} {{ pilot[2] }} (ID: {{ pilot[0] }})</option>
-                        {% endfor %}
-                    </select>
+            <div class="card-body">
+                <div class="alert alert-info mb-lg">
+                    Staffing Requirement: <strong>{{ req_pilots }} Pilots</strong> and <strong>{{ req_stewards }} Attendants</strong>.
                 </div>
 
-                <div class="form-group mb-md" style="margin-top: 20px;">
-                    <label style="color: #003366; font-weight: bold; display: block; margin-bottom: 8px;">Select Attendants ({{ req_stewards }} required)</label>
-                    <select id="steward_select" name="attendant_ids" multiple required style="height: 150px;">
-                        {% for steward in attendants %}
-                        <option value="{{ steward[0] }}">{{ steward[1] }} {{ steward[2] }} (ID: {{ steward[0] }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
+                <form id="crewForm" action="/finalize_flight_creation" method="POST">
+                    <input type="hidden" name="origin" value="{{ origin }}">
+                    <input type="hidden" name="dest" value="{{ dest }}">
+                    <input type="hidden" name="departure_time" value="{{ departure_time }}">
+                    <input type="hidden" name="plane_id" value="{{ plane_id }}">
+                    <input type="hidden" name="economy_price" value="{{ economy_price }}">
+                    <input type="hidden" name="business_price" value="{{ business_price }}">
 
-                <div class="ctrl-note">
-                    💡 <strong>Tip:</strong> Hold <b>Ctrl</b> (Windows) or <b>Cmd</b> (Mac) to select multiple members.
-                </div>
+                    <div class="form-group">
+                        <label>Select Pilots ({{ req_pilots }} required)</label>
+                        <select id="pilot_select" name="pilot_ids" multiple required>
+                            {% for pilot in pilots %}
+                            <option value="{{ pilot[0] }}">{{ pilot[1] }} {{ pilot[2] }} (ID: {{ pilot[0] }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-                <div style="display: flex; gap: 10px; margin-top: 30px;">
-                    <button type="submit" style="flex: 2; background-color: #0066cc; color: white; border: none; padding: 14px; border-radius: 6px; font-weight: bold; cursor: pointer;">Finalize Flight</button>
-                    <a href="{{ url_for('manage_flights') }}" style="flex: 1; text-align: center; padding: 14px; color: #666; text-decoration: none; font-weight: 500;">Cancel</a>
-                </div>
-            </form>
-        </div>
-    </section>
-</main>
+                    <div class="form-group">
+                        <label>Select Attendants ({{ req_stewards }} required)</label>
+                        <select id="steward_select" name="attendant_ids" multiple required>
+                            {% for steward in attendants %}
+                            <option value="{{ steward[0] }}">{{ steward[1] }} {{ steward[2] }} (ID: {{ steward[0] }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-<script>
-    /**
-     * Strict validation to prevent invalid crew counts from reaching the server.
-     * This intercepts the form submission and checks the counts locally.
-     */
-    document.getElementById('crewForm').onsubmit = function(e) {
-        const reqP = {{ req_pilots }};
-        const reqS = {{ req_stewards }};
-        const selP = document.getElementById('pilot_select').selectedOptions.length;
-        const selS = document.getElementById('steward_select').selectedOptions.length;
+                    <div class="alert alert-warning mt-md">
+                        💡 <strong>Tip:</strong> Hold <b>Ctrl</b> (Windows) or <b>Cmd</b> (Mac) to select multiple members.
+                    </div>
 
-        if (selP !== reqP || selS !== reqS) {
-            // Displays an alert if the selection doesn't match requirements
-            alert(`⚠️ Crew Assignment Error:\n\nPilots: Selected ${selP} (Need ${reqP})\nAttendants: Selected ${selS} (Need ${reqS})\n\nPlease adjust your selection to match the aircraft size.`);
-            e.preventDefault(); // Cancels the form submission
-            return false;
-        }
-    };
-</script>
+                    <div class="flex gap-md mt-lg">
+                        <button type="submit" class="btn btn-primary" style="flex: 2;">Finalize Flight</button>
+                        <a href="{{ url_for('manage_flights') }}" class="btn btn-ghost" style="flex: 1; text-align: center;">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        /**
+         * Strict validation to prevent invalid crew counts from reaching the server.
+         * This intercepts the form submission and checks the counts locally.
+         */
+        document.getElementById('crewForm').onsubmit = function(e) {
+            const reqP = {{ req_pilots }};
+            const reqS = {{ req_stewards }};
+            const selP = document.getElementById('pilot_select').selectedOptions.length;
+            const selS = document.getElementById('steward_select').selectedOptions.length;
+
+            if (selP !== reqP || selS !== reqS) {
+                // Displays an alert if the selection doesn't match requirements
+                alert(`⚠️ Crew Assignment Error:\n\nPilots: Selected ${selP} (Need ${reqP})\nAttendants: Selected ${selS} (Need ${reqS})\n\nPlease adjust your selection to match the aircraft size.`);
+                e.preventDefault(); // Cancels the form submission
+                return false;
+            }
+        };
+    </script>
 </body>
 </html>

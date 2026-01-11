@@ -1,60 +1,165 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Log In - FLYTAU</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-  </head>
-  <body>
-    <main class="container">
-      <section class="card mt-xl m-auto" style="max-width: 480px;">
-        <div class="card-header">
-          <h1 class="card-title">Log In to FLYTAU</h1>
-          <p class="text-muted">
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Log In - FLYTAU</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#007B8F", // Teal from the logo swoosh
+            secondary: "#0B253A", // Dark blue from the text/plane
+            "background-light": "#F3F7F9",
+            "background-dark": "#0F172A",
+            "surface-light": "#FFFFFF",
+            "surface-dark": "#1E293B",
+          },
+          fontFamily: {
+            display: ["Montserrat", "sans-serif"],
+            body: ["Montserrat", "sans-serif"],
+          },
+          borderRadius: {
+            DEFAULT: "0.5rem",
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Montserrat', sans-serif;
+    }
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+    .animate-float {
+      animation: float 6s ease-in-out infinite;
+    }
+    /* Ensure bg-secondary buttons have correct colors */
+    button.bg-secondary,
+    button[class*="bg-secondary"] {
+      background-color: rgba(11, 37, 58, 1) !important;
+      border-color: rgba(11, 37, 58, 1) !important;
+    }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-secondary dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
+  <nav class="w-full bg-surface-light dark:bg-surface-dark shadow-sm py-4 px-6 fixed top-0 z-50 transition-colors duration-300">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <div class="flex items-center space-x-2 text-center">
+        <span class="material-icons text-primary text-3xl transform rotate-45">flight</span>
+        <span class="text-2xl font-bold tracking-tight text-secondary dark:text-white">FLYTAU</span>
+      </div>
+    </div>
+  </nav>
+  <main class="flex-grow flex items-center justify-center relative pt-20 px-4">
+    <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+      <div class="absolute -top-20 -right-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+      <div class="absolute top-40 -left-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-0 right-1/4 w-full h-1/2 bg-gradient-to-t from-white/50 to-transparent dark:from-background-dark dark:to-transparent"></div>
+    </div>
+    <div class="max-w-md w-full z-10 flex flex-col items-center space-y-8 py-12">
+      <div class="flex flex-col items-center animate-float">
+        <div class="relative w-24 h-24 flex items-center justify-center">
+          <!-- Outer animated rings -->
+          <div class="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse"></div>
+          <div class="absolute w-20 h-20 rounded-full border-t-4 border-l-4 border-primary transform -rotate-12"></div>
+          <!-- Circular logo container -->
+          <div class="relative w-20 h-20 rounded-full overflow-hidden shadow-lg bg-white dark:bg-surface-dark">
+            <img
+              src="{{ url_for('static', filename='images/flytau_logo.png') }}"
+              alt="FLYTAU logo"
+              class="w-full h-full object-contain"
+            >
+          </div>
+        </div>
+      </div>
+      <div class="w-full bg-surface-light dark:bg-surface-dark p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 transition-colors duration-300">
+        <div class="mb-8 text-center">
+          <h2 class="text-2xl font-bold text-secondary dark:text-white">Log into FLYTAU</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
             Use your email if you are a customer, or your employee ID if you are a manager.
           </p>
         </div>
 
-        <div class="card-body">
-          {% if error %}
-            <div class="alert alert-error">{{ error }}</div>
-          {% endif %}
+        {% if error %}
+          <div class="mb-6 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+          </div>
+        {% endif %}
 
-          <form action="{{ url_for('login') }}" method="post">
-            <div class="form-group">
-              <label for="username">Username</label>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                placeholder="Email (customer) or Employee ID (manager)"
+        <form action="{{ url_for('login') }}" method="post" class="space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="username">Username</label>
+            <div class="mt-1 relative rounded-md shadow-sm">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span class="material-icons text-gray-400 text-sm">person</span>
+              </div>
+              <input 
+                class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" 
+                id="username" 
+                name="username" 
+                placeholder="Email (customer) or Employee ID (manager)" 
                 value="{{ last_username or '' }}"
-                required
+                required 
+                type="text"
               />
             </div>
-
-            <div class="form-group">
-              <label for="password">Password</label>
-              <input
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="password">Password</label>
+            <div class="mt-1 relative rounded-md shadow-sm">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span class="material-icons text-gray-400 text-sm">lock</span>
+              </div>
+              <input 
+                class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" 
+                id="password" 
+                name="password" 
+                placeholder="Enter your password" 
+                required 
                 type="password"
-                id="password"
-                name="password"
-                placeholder="Enter your password"
-                required
               />
             </div>
+          </div>
+          <button 
+            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-semibold text-white bg-secondary hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary transition-all hover:-translate-y-0.5" 
+            type="submit"
+          >
+            Log In
+          </button>
+        </form>
 
-            <div class="btn-group mt-md">
-              <button type="submit" class="btn btn-primary">Log In</button>
-              <a href="{{ url_for('home') }}" class="btn btn-secondary">Back to Home</a>
-            </div>
-          </form>
-
-          <p class="mt-lg text-muted">
-            New customer?
-            <a href="{{ url_for('signup') }}">Create an account</a>
-          </p>
+        <div class="relative py-6">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-200 dark:border-gray-600"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-surface-light dark:bg-surface-dark text-gray-500 dark:text-gray-400">or</span>
+          </div>
         </div>
-      </section>
-    </main>
-  </body>
+
+        <div class="space-y-3">
+          <a 
+            href="{{ url_for('signup') }}" 
+            class="w-full flex justify-center py-3 px-4 border border-primary text-primary dark:text-white dark:border-gray-600 rounded-lg text-sm font-semibold bg-transparent hover:bg-primary hover:text-white dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all"
+          >
+            Create an Account
+          </a>
+          <a 
+            href="{{ url_for('home') }}" 
+            class="w-full flex justify-center py-2 px-4 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-secondary dark:hover:text-white transition-colors"
+          >
+            Back to Home
+          </a>
+  </main>
+</body>
 </html>

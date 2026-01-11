@@ -2,33 +2,235 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guest Portal - FLYTAU</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    {% if session.get('guest_email') %}
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    {% endif %}
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#007B8F",
+                        secondary: "#0B253A",
+                        "background-light": "#F3F7F9",
+                        "background-dark": "#0F172A",
+                        "surface-light": "#FFFFFF",
+                        "surface-dark": "#1E293B",
+                    },
+                    fontFamily: {
+                        display: ["Montserrat", "sans-serif"],
+                        body: ["Montserrat", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                    },
+                },
+            },
+        };
+    </script>
     <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
         .hidden { display: none !important; }
-        /* Styling for the ticket result display */
+
+        .phone-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .btn-danger-small {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 0 12px;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
         .ticket-info-box {
             margin-top: 20px;
             padding: 20px;
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-md);
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
             background-color: #f9fafb;
         }
+
         .ticket-header {
-            border-bottom: 2px solid var(--color-primary);
+            border-bottom: 2px solid #007B8F;
             margin-bottom: 15px;
             padding-bottom: 5px;
         }
+
         .cancel-warning {
             background-color: #fee2e2;
             color: #b91c1c;
             padding: 12px;
-            border-radius: var(--radius-sm);
+            border-radius: 0.5rem;
             margin-bottom: 15px;
             border: 1px solid #fecaca;
         }
+        /* Ensure bg-secondary buttons have correct colors */
+        button.bg-secondary,
+        button[class*="bg-secondary"] {
+            background-color: rgba(11, 37, 58, 1) !important;
+            border-color: rgba(11, 37, 58, 1) !important;
+        }
     </style>
 </head>
+{% if not session.get('guest_email') %}
+<body class="bg-background-light dark:bg-background-dark text-secondary dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <script>
+          {% for message in messages %}
+            alert("{{ message }}");
+          {% endfor %}
+        </script>
+      {% endif %}
+    {% endwith %}
+    <nav class="w-full bg-surface-light dark:bg-surface-dark shadow-sm py-4 px-6 fixed top-0 z-50 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2 text-center">
+                <span class="material-icons text-primary text-3xl transform rotate-45">flight</span>
+                <span class="text-2xl font-bold tracking-tight text-secondary dark:text-white">FLYTAU</span>
+            </div>
+        </div>
+    </nav>
+        <main class="flex-grow flex items-center justify-center relative pt-24 pb-12 px-4">
+            <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                <div class="absolute -top-20 -right-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+                <div class="absolute top-40 -left-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
+                <div class="absolute bottom-0 right-1/4 w-full h-1/2 bg-gradient-to-t from-white/50 to-transparent dark:from-background-dark dark:to-transparent"></div>
+            </div>
+            <div class="max-w-md w-full z-10 flex flex-col items-center space-y-6">
+                <div class="flex flex-col items-center animate-float">
+                    <div class="relative w-24 h-24 flex items-center justify-center">
+                        <!-- Outer animated rings -->
+                        <div class="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse"></div>
+                        <div class="absolute w-20 h-20 rounded-full border-t-4 border-l-4 border-primary transform -rotate-12"></div>
+                        <!-- Circular logo container -->
+                        <div class="relative w-20 h-20 rounded-full overflow-hidden shadow-lg bg-white dark:bg-surface-dark">
+                            <img
+                                src="{{ url_for('static', filename='images/flytau_logo.png') }}"
+                                alt="FLYTAU logo"
+                                class="w-full h-full object-contain"
+                            >
+                        </div>
+                    </div>
+                </div>
+                <div class="w-full bg-surface-light dark:bg-surface-dark p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 transition-colors duration-300">
+                    <div class="mb-6 text-center">
+                        <h2 class="text-2xl font-bold text-secondary dark:text-white">Guest Sign In</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Enter your details to continue your booking.</p>
+                    </div>
+
+                    {% if error %}
+                        <div class="mb-5 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm">
+                            {{ error }}
+                        </div>
+                    {% endif %}
+
+                    <form action="{{ url_for('guest_sign_in_route') }}" method="POST" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="first_name">First Name</label>
+                                <input class="mt-1 block w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" id="first_name" name="first_name" placeholder="John" required type="text"/>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="last_name">Last Name</label>
+                                <input class="mt-1 block w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" id="last_name" name="last_name" placeholder="Doe" required type="text"/>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="email">Email Address</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="material-icons text-gray-400 text-sm">email</span>
+                                </div>
+                                <input class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" id="email" name="email" placeholder="name@example.com" value="{{ last_email if last_email else '' }}" required type="email"/>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="phone-container">Phone Number(s)</label>
+                            <div id="phone-container" class="mt-1 space-y-2">
+                                <div class="phone-row">
+                                    <div class="relative flex-grow rounded-md shadow-sm">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span class="material-icons text-gray-400 text-sm">phone</span>
+                                        </div>
+                                        <input class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" name="phones" placeholder="e.g. 0501234567" required type="tel"/>
+                                    </div>
+                                    <button type="button" class="inline-flex items-center justify-center p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onclick="addGuestPhoneField()">
+                                        <span class="material-symbols-outlined text-xl">add</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-semibold text-white bg-secondary hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary transition-all hover:-translate-y-0.5 mt-6" type="submit">
+                            Continue
+                        </button>
+                    </form>
+                    <div class="relative py-6">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-200 dark:border-gray-600"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-2 bg-surface-light dark:bg-surface-dark text-gray-500 dark:text-gray-400">or</span>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <a 
+                            href="{{ url_for('login') }}" 
+                            class="w-full flex justify-center py-3 px-4 border border-primary text-primary dark:text-white dark:border-gray-600 rounded-lg text-sm font-semibold bg-transparent hover:bg-primary hover:text-white dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all"
+                        >
+                            Log In
+                        </a>
+                        <a 
+                            href="{{ url_for('signup') }}" 
+                            class="w-full flex justify-center py-3 px-4 border border-primary text-primary dark:text-white dark:border-gray-600 rounded-lg text-sm font-semibold bg-transparent hover:bg-primary hover:text-white dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all"
+                        >
+                            Create an Account
+                        </a>
+                        <a 
+                            href="{{ url_for('home') }}" 
+                            class="w-full flex justify-center py-2 px-4 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-secondary dark:hover:text-white transition-colors"
+                        >
+                            Back to Home
+                        </a>
+                    </div>
+                </div>
+                <div class="flex space-x-6 text-sm text-gray-500 dark:text-gray-400">
+                    <a class="hover:text-primary transition-colors" href="#">Privacy</a>
+                    <span class="text-gray-300 dark:text-gray-600">•</span>
+                    <a class="hover:text-primary transition-colors" href="#">Terms</a>
+                    <span class="text-gray-300 dark:text-gray-600">•</span>
+                    <a class="hover:text-primary transition-colors" href="#">Contact</a>
+                </div>
+            </div>
+        </main>
+    </body>
+{% else %}
 <body>
     {% with messages = get_flashed_messages() %}
       {% if messages %}
@@ -39,30 +241,7 @@
         </script>
       {% endif %}
     {% endwith %}
-
     <main class="container">
-
-        {% if not session.get('guest_email') %}
-        <section class="card mt-xl m-auto" style="max-width: 480px;">
-            <div class="card-header">
-                <h1 class="card-title">Guest Sign-In</h1>
-                <p class="text-muted">Enter your email to continue as a guest</p>
-            </div>
-            <div class="card-body">
-                {% if error %}
-                    <div class="alert alert-error mb-md">{{ error }}</div>
-                {% endif %}
-                <form action="{{ url_for('guest_sign_in_route') }}" method="POST">
-                    <div class="form-group">
-                        <label for="guest-email">Email Address</label>
-                        <input type="email" id="guest-email" name="email" placeholder="example@mail.com" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100 mt-md">Continue to Flights</button>
-                </form>
-            </div>
-        </section>
-
-        {% else %}
         <nav class="flight-nav">
             <a href="javascript:void(0)" id="tab-book" class="flight-nav-item {{ 'active' if not show_manage else '' }}" onclick="showTab('book')">Book A Flight</a>
             <a href="javascript:void(0)" id="tab-manage" class="flight-nav-item {{ 'active' if show_manage else '' }}" onclick="showTab('manage')">My Booking</a>
@@ -71,26 +250,40 @@
 
         <section id="section-book" class="card mt-xl {{ 'hidden' if show_manage else '' }}">
             <div class="card-header">
-                <h1 class="card-title">Welcome, Guest!</h1>
+                <h1 class="card-title">Welcome, {{ session.get('guest_name', 'Guest') }}!</h1>
                 <p class="text-muted">Search for flights to book your next trip.</p>
             </div>
             <div class="card-body">
                 <form id="flight-search-form" class="flight-search-form">
                     <div class="flight-search-fields">
+
                         <div class="flight-field">
                             <label for="origin_airport">Origin</label>
-                            <input type="text" id="origin_airport" name="origin_airport" placeholder="TLV" class="airport-input" required>
+                            <select id="origin_airport" name="origin_airport" class="airport-select" required>
+                                <option value="" disabled selected>Origin</option>
+                                {% for airport in airports %}
+                                    <option value="{{ airport }}">{{ airport }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
+
                         <div class="flight-path-icon">
                             <svg width="60" height="40" viewBox="0 0 60 40">
                                 <path d="M 5 20 Q 30 5, 55 20" stroke="var(--color-primary-light)" stroke-width="2" fill="none" stroke-dasharray="5,5"/>
                                 <path d="M 25 18 L 30 20 L 25 22 L 28 20 Z" fill="var(--color-primary)" transform="translate(5, 0)"/>
                             </svg>
                         </div>
+
                         <div class="flight-field">
                             <label for="destination_airport">Where to?</label>
-                            <input type="text" id="destination_airport" name="destination_airport" placeholder="Where to?" class="airport-input" required>
+                            <select id="destination_airport" name="destination_airport" class="airport-select" required>
+                                <option value="" disabled selected>Destination</option>
+                                {% for airport in airports %}
+                                    <option value="{{ airport }}">{{ airport }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
+
                         <div class="flight-field">
                             <label for="departure_date">Departure</label>
                             <input type="date" id="departure_date" name="departure_date" required>
@@ -99,8 +292,6 @@
                             <label for="passengers">Passenger</label>
                             <div class="passenger-selector">
                                 <input type="number" id="passengers" name="passengers" value="1" min="1" max="9" class="passenger-input" required>
-                                <span class="seat-icon">🪑</span>
-                                <span class="dropdown-chevron">▼</span>
                             </div>
                         </div>
                     </div>
@@ -109,6 +300,15 @@
                     </div>
                 </form>
                 <div id="search-results" class="search-results hidden"></div>
+
+                <!-- Future Flights Section -->
+                <div id="future-flights-section" style="margin-top: 2rem; border-top: 1px solid #e5e7eb; padding-top: 1.5rem;">
+                    <h2 style="margin-bottom: 1rem;">All Upcoming Flights</h2>
+                    <div id="future-flights-list" class="flight-results-list">
+                        <p class="text-muted">Loading upcoming flights...</p>
+                    </div>
+                    <div id="future-flights-pagination" style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1.5rem;"></div>
+                </div>
             </div>
         </section>
 
@@ -157,14 +357,27 @@
                 </div>
                 {% endif %}
             </div>
-        </section>
-        {% endif %}
-    </main>
-
+            </section>
+        </main>
     <script>
-        /**
-         * Toggles visibility between Booking and Management sections
-         */
+        function addGuestPhoneField() {
+            const container = document.getElementById('phone-container');
+            const div = document.createElement('div');
+            div.className = 'phone-row';
+            div.innerHTML = `
+                <div class="relative flex-grow rounded-md shadow-sm">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="material-icons text-gray-400 text-sm">phone</span>
+                    </div>
+                    <input class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" name="phones" placeholder="Additional phone" type="tel"/>
+                </div>
+                <button type="button" class="inline-flex items-center justify-center p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onclick="this.parentElement.remove()">
+                    <span class="material-symbols-outlined text-xl">close</span>
+                </button>
+            `;
+            container.appendChild(div);
+        }
+
         function showTab(tabName) {
             document.getElementById('section-book').classList.toggle('hidden', tabName !== 'book');
             document.getElementById('section-manage').classList.toggle('hidden', tabName !== 'manage');
@@ -172,9 +385,6 @@
             document.getElementById('tab-manage').classList.toggle('active', tabName === 'manage');
         }
 
-        /**
-         * AJAX search logic for finding flights
-         */
         document.getElementById('flight-search-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             const resultsDiv = document.getElementById('search-results');
@@ -215,10 +425,18 @@
                 } else {
                     resultsDiv.innerHTML = '<p class="text-muted">No flights found.</p>';
                 }
+                
+                // Ensure future flights section is visible below search results
+                const futureFlightsSection = document.getElementById('future-flights-section');
+                if (futureFlightsSection) {
+                    futureFlightsSection.style.display = '';
+                }
             } catch (error) {
                 resultsDiv.innerHTML = `<div class="alert alert-error">An error occurred during search.</div>`;
             }
-        });
+            });
+        }
     </script>
 </body>
+{% endif %}
 </html>

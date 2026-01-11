@@ -92,29 +92,27 @@ def create_customer_with_phones(
         )
 
 
-def guest_sign_in(email: str) -> None:
-    """
-    Ensure a guest with the given email exists in the Guest table.
-
-    Flow:
-    - If the email already exists in Guest -> do nothing.
-    - If it does not exist -> insert a new row with this email.
-
-    Assumes a table similar to:
-        Guest(Mail VARCHAR PRIMARY KEY, Signup_date DATE, ...)
-    """
+def guest_sign_in(email: str, first_name: str, last_name: str, phones: list) -> None:
     with get_db_connection() as cursor:
-        # Check if guest already exists
         cursor.execute("SELECT Mail FROM Guest WHERE Mail = %s", (email,))
-        if cursor.fetchone():
-            return
+        if not cursor.fetchone():
+            cursor.execute(
+                "INSERT INTO Guest (Mail, first_name, last_name) VALUES (%s, %s, %s)",
+                (email, first_name, last_name)
+            )
+        else:
+            cursor.execute(
+                "UPDATE Guest SET first_name = %s, last_name = %s WHERE Mail = %s",
+                (first_name, last_name, email)
+            )
 
-        # Insert new guest
-        cursor.execute(
-            "INSERT INTO Guest (Mail) VALUES (%s)",
-            (email,),
-        )
-
+        for phone in phones:
+            clean_phone = phone.strip() if hasattr(phone, 'strip') else str(phone)
+            if clean_phone:
+                cursor.execute(
+                    "INSERT IGNORE INTO guest_phone (Mail, phone) VALUES (%s, %s)",
+                    (email, clean_phone)
+                )
 
 def search_flights(origin_airport: str, destination_airport: str, departure_date: str, passengers: int) -> List[Dict]:
     """
@@ -164,6 +162,87 @@ def search_flights(origin_airport: str, destination_airport: str, departure_date
             })
 
         return flights
+
+def get_all_future_flights(page: int = 1, per_page: int = 10) -> Dict:
+    """
+    Get all future flights with at least 1 available seat, with pagination support.
+    Returns flights ordered by departure datetime (ascending).
+    """
+    with get_db_connection() as cursor:
+        # Calculate offset for pagination
+        offset = (page - 1) * per_page
+        
+        # First, get total count
+        cursor.execute(
+            """
+            SELECT COUNT(DISTINCT f.ID)
+            FROM Flight f
+            JOIN Plane p ON f.Plane_ID = p.ID
+            LEFT JOIN (
+                SELECT 
+                    o.Flight_ID,
+                    COUNT(a.Class_ID) AS booked_seats
+                FROM Assigned a
+                JOIN `Order` o ON a.Order_ID = o.Order_ID
+                WHERE o.Status = 'Active'
+                GROUP BY o.Flight_ID
+            ) seat_counts ON f.ID = seat_counts.Flight_ID
+            WHERE f.Departure_DateTime >= NOW()
+              AND (p.Total_Capacity - COALESCE(seat_counts.booked_seats, 0)) >= 1
+            """,
+        )
+        total_count = cursor.fetchone()[0]
+        
+        # Then get paginated results
+        cursor.execute(
+            """
+            SELECT 
+                f.ID, f.Departure_DateTime, f.Arrival_DateTime,
+                f.Path_Origin_Airport, f.Path_Dest_Airport,
+                f.Business_Seat_Price, f.Economy_Seat_Price, f.Plane_ID
+            FROM Flight f
+            JOIN Plane p ON f.Plane_ID = p.ID
+            LEFT JOIN (
+                SELECT 
+                    o.Flight_ID,
+                    COUNT(a.Class_ID) AS booked_seats
+                FROM Assigned a
+                JOIN `Order` o ON a.Order_ID = o.Order_ID
+                WHERE o.Status = 'Active'
+                GROUP BY o.Flight_ID
+            ) seat_counts ON f.ID = seat_counts.Flight_ID
+            WHERE f.Departure_DateTime >= NOW()
+              AND (p.Total_Capacity - COALESCE(seat_counts.booked_seats, 0)) >= 1
+            ORDER BY f.Departure_DateTime ASC
+            LIMIT %s OFFSET %s
+            """,
+            (per_page, offset),
+        )
+
+        results = cursor.fetchall()
+
+        flights = []
+        for row in results:
+            flights.append({
+                "flight_id": row[0],
+                "departure_datetime": row[1].strftime("%Y-%m-%d %H:%M:%S") if row[1] else None,
+                "arrival_datetime": row[2].strftime("%Y-%m-%d %H:%M:%S") if row[2] else None,
+                "origin_airport": row[3],
+                "destination_airport": row[4],
+                "business_seat_price": row[5],
+                "economy_seat_price": row[6],
+                "plane_id": row[7],
+            })
+
+        total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 0
+        
+        return {
+            "flights": flights,
+            "total": total_count,
+            "page": page,
+            "per_page": per_page,
+            "total_pages": total_pages
+        }
 
 def get_ticket_details(order_id: int, email: str):
     """
@@ -458,6 +537,96 @@ def get_flight_occupancy_report() -> List[Dict]:
         return report_data
 
 
+def get_total_revenue_report() -> List[Dict]:
+    """
+    Returns aggregated revenue per plane size, manufacturer and class type.
+    Uses the provided SQL logic to compute:
+      - Total_Revenue (sum of Total_Price)
+      - Number_of_Tickets (count of orders)
+    for orders with status Active / Completed / Costumer Cancelation.
+    """
+    with get_db_connection() as cursor:
+        query = """
+            SELECT 
+                p.Size AS Plane_Size, 
+                p.Manufacturer, 
+                c.Type,
+                SUM(o.Total_Price) AS Total_Revenue,
+                COUNT(o.Order_ID) AS Number_of_Tickets
+            FROM `Order` o
+            JOIN Assigned a ON o.Order_ID = a.Order_ID
+            JOIN Plane p ON a.Plane_ID = p.ID
+            JOIN Class c ON a.Class_ID = c.ID AND a.Plane_ID = c.Plane_ID
+            WHERE o.Status IN ('Active', 'Completed', 'Costumer Cancelation')
+            GROUP BY p.Size, p.Manufacturer, c.Type
+            ORDER BY Total_Revenue DESC
+        """
+        cursor.execute(query)
+        results = cursor.fetchall()
+
+        report_data: List[Dict] = []
+        for row in results:
+            report_data.append({
+                "plane_size": row[0],
+                "manufacturer": row[1],
+                "class_type": row[2],
+                "total_revenue": float(row[3]) if row[3] is not None else 0.0,
+                "ticket_count": int(row[4]) if row[4] is not None else 0,
+            })
+
+        return report_data
+
+
+def get_cancellation_rate_report() -> List[Dict]:
+    """
+    Returns monthly customer cancellation statistics.
+    Excludes system/manager cancellations, and calculates percentage of
+    customer cancellations out of all relevant orders per month.
+    """
+    with get_db_connection() as cursor:
+        query = """
+            SELECT 
+                YEAR(o.Order_Date) AS Order_Year,
+                MONTH(o.Order_Date) AS Order_Month,
+                COUNT(CASE WHEN o.Status = 'Costumer Cancelation' THEN 1 END) AS Customer_Cancelled_Count,
+                COUNT(o.Order_ID) AS Relevant_Orders_Count,
+                ROUND(
+                    (COUNT(CASE WHEN o.Status = 'Costumer Cancelation' THEN 1 END) / COUNT(o.Order_ID)) * 100, 
+                    2
+                ) AS Cancellation_Rate_Percentage
+            FROM `Order` o
+            WHERE o.Status != 'System Cancelation'
+            GROUP BY YEAR(o.Order_Date), MONTH(o.Order_Date)
+            ORDER BY Order_Year DESC, Order_Month DESC
+        """
+        cursor.execute(query)
+        results = cursor.fetchall()
+
+        report_data: List[Dict] = []
+        for row in results:
+            year = int(row[0])
+            month = int(row[1])
+            cancelled = int(row[2])
+            total = int(row[3])
+            rate = float(row[4]) if row[4] is not None else 0.0
+
+            # Label format: YYYY-MM (e.g., 2025-01)
+            label = f"{year}-{month:02d}"
+
+            report_data.append({
+                "label": label,
+                "year": year,
+                "month": month,
+                "cancelled": cancelled,
+                "total": total,
+                "rate": rate,
+            })
+
+        # Reverse to show oldest month on the left if desired
+        report_data.reverse()
+        return report_data
+
+
 def update_active_orders_to_completed() -> int:
     """
     Fetches all orders with status 'Active', joins with Flight table,
@@ -607,14 +776,14 @@ def get_available_resources(origin, dest, departure_time):
 
     return resources
 
-def create_path(origin, dest, duration, clock_duration, origin_tz, dest_tz):
+def create_path(origin, dest, duration, origin_tz, dest_tz):
     with get_db_connection() as cursor:
         query = """
-            INSERT INTO path (Origin_Airport, Dest_Airport, Duration, Clock_Duration, 
+            INSERT INTO path (Origin_Airport, Dest_Airport, Duration, 
                               Origin_Timezone, Dest_Timezone)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (origin, dest, duration, clock_duration, origin_tz, dest_tz))
+        cursor.execute(query, (origin, dest, duration, origin_tz, dest_tz))
 
 def get_path_info(origin, dest):
     with get_db_connection() as cursor:
@@ -759,3 +928,48 @@ def get_aircraft_activity_report():
                 "route": row[5]
             })
         return data
+def process_system_cancellation(flight_id):
+    # כאן אנחנו משתמשים ב-with על הפונקציה שלך שמחזירה cursor
+    with get_db_connection() as cursor:
+        try:
+            # 1. עדכון הטיסה ללא פעילה
+            # (וודא שהרצת ALTER TABLE flight ADD COLUMN is_active TINYINT(1) DEFAULT 1;)
+            print(f"DEBUG: Setting flight {flight_id} as inactive")
+            cursor.execute("UPDATE flight SET is_active = 0 WHERE ID = %s", (flight_id,))
+
+            # 2. עדכון סטטוס ההזמנות
+            print(f"DEBUG: Updating orders status for flight {flight_id}")
+            cursor.execute("""
+                UPDATE `Order` 
+                SET Status = 'System Cancelation', Total_Price = 0 
+                WHERE Flight_ID = %s
+            """, (flight_id,))
+
+            # אין צורך ב-commit() כי הגדרת autocommit=True בפונקציית החיבור!
+
+            print("DEBUG: Success! Changes saved automatically via autocommit.")
+            return True
+
+        except Exception as e:
+            print(f"CRITICAL ERROR in process_system_cancellation: {e}")
+            return False
+
+
+def get_all_airports():
+    """שליפת שדות תעופה לפי מיקום הטור כדי לעקוף שמות עם רווחים"""
+    with get_db_connection() as cursor:
+        try:
+            # אנחנו שולפים את הכל מהטבלה
+            cursor.execute("SELECT * FROM path")
+            rows = cursor.fetchall()
+
+            airports = set()
+            for row in rows:
+                # row[0] ו-row[1] הם בדרך כלל המוצא והיעד
+                if row[0]: airports.add(str(row[0]).strip())
+                if row[1]: airports.add(str(row[1]).strip())
+
+            return sorted(list(airports))
+        except Exception as e:
+            print(f"Error fetching airports: {e}")
+            return []

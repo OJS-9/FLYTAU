@@ -505,6 +505,13 @@ button[type="submit"]:active,
   font-size: var(--font-size-lg);
 }
 
+/* Tailwind bg-secondary button override - ensure correct colors */
+button.bg-secondary,
+button[class*="bg-secondary"] {
+  background-color: rgba(11, 37, 58, 1) !important;
+  border-color: rgba(11, 37, 58, 1) !important;
+}
+
 /* Button Groups */
 .btn-group {
   display: flex;
