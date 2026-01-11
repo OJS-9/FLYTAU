@@ -190,39 +190,23 @@ def signup():
 
 @app.route("/guest_sign_in", methods=["POST"])
 def guest_sign_in_route():
-    """
-    Guest login / signup using email only.
-
-    Flow:
-    - Get email from form.
-    - If invalid -> show error on guest page.
-    - Call guest_sign_in(email) which:
-        * checks if email exists in Guest table
-        * inserts if it doesn't exist
-    - Store guest info in session and redirect to guest dashboard.
-    """
     email = request.form.get("email", "").strip()
+    f_name = request.form.get("first_name", "").strip()
+    l_name = request.form.get("last_name", "").strip()
+    phones = request.form.getlist("phones")
 
-    if not email or "@" not in email:
-        return render_template(
-            "guest.html",
-            error="Please enter a valid email address.",
-            last_email=email,
-        )
+    if not (f_name.isascii() and f_name.isalpha()) or not (l_name.isascii() and l_name.isalpha()):
+        return render_template("guest.html",
+                               error="First and Last names must contain English letters only (no spaces or numbers).",
+                               last_email=email)
+    session.clear()
+    session["user_type"] = "guest"
+    session["guest_email"] = email
+    session["guest_first_name"] = f_name
+    session["guest_last_name"] = l_name
+    session["guest_phones"] = phones
 
-    try:
-        guest_sign_in(email)
-        session.clear()
-        session["user_type"] = "guest"
-        session["guest_email"] = email
-        return redirect("/guest_dashboard")
-    except Exception:
-        return render_template(
-            "guest.html",
-            error="An unexpected error occurred while signing in as guest. Please try again.",
-            last_email=email,
-        )
-
+    return redirect(url_for('guest_dashboard'))
 
 @app.route("/user_dashboard")
 def user_dashboard():
@@ -231,7 +215,7 @@ def user_dashboard():
     
     # Update active orders to completed before fetching order history
     update_active_orders_to_completed()
-    
+    airports = get_all_airports()
     # Get order history for the logged-in user
     user_email = session.get("user_email")
     order_history = get_user_order_history(user_email) if user_email else []
@@ -241,6 +225,7 @@ def user_dashboard():
         user_name=session.get("user_name"),
         user_email=user_email,
         order_history=order_history,
+        airports=airports
     )
 
 
@@ -248,10 +233,12 @@ def user_dashboard():
 def admin_dashboard():
     if session.get("user_type") != "manager":
         return redirect("/login")
+    airports = get_all_airports()
     return render_template(
         "admin_dashboard.html",
         user_name=session.get("user_name"),
         user_id=session.get("user_id"),
+        airports=airports
     )
 
 
@@ -263,9 +250,11 @@ def guest_dashboard():
     """
     if session.get("user_type") != "guest":
         return redirect("/")
+    airports = get_all_airports()
     return render_template(
         "guest.html",
         guest_email=session.get("guest_email"),
+        airports=airports
     )
 
 
@@ -277,17 +266,16 @@ def logout():
 
 @app.route("/search_flights", methods=["POST", "GET"])
 def search_flights_route():
-    """
-    Handle flight search requests via AJAX.
-    Validates user is logged in, validates inputs, and filters results
-    based on the plane's remaining capacity for all requested passengers.
-    """
-    # 1. Check if user is logged in as customer or guest
+
+    if request.method == "GET":
+        airports = get_all_airports()  # קריאה לפונקציה החדשה ב-utils
+
+        return render_template("customer_search.html", airports=airports)
+
     user_type = session.get("user_type")
     if user_type not in ["customer", "guest"]:
-        return jsonify({"error": "You must be signed in (as guest or customer) to search flights."}), 401
+        return jsonify({"error": "You must be signed in to search flights."}), 401
 
-    # 2. Extract form data
     origin_airport = request.form.get("origin_airport", "").strip().upper()
     destination_airport = request.form.get("destination_airport", "").strip().upper()
     departure_date = request.form.get("departure_date", "").strip()
@@ -542,6 +530,15 @@ def finalize_booking():
     try:
         # NOTICE: We do NOT pass passport/dob here anymore.
         # We only pass the fields that exist in your original 'Order' table.
+        if user_type == 'guest':
+            from utils import guest_sign_in
+            guest_sign_in(
+                email=session.get("guest_email"),
+                first_name=session.get("guest_first_name"),
+                last_name=session.get("guest_last_name"),
+                phones=session.get("guest_phones", [])
+            )
+
         new_order_id = create_order_with_seats(
             flight_id=int(flight_id),
             selected_seats=selected_seats,
@@ -561,14 +558,66 @@ def finalize_booking():
         return redirect(url_for('home'))
 
 
-@app.route('/manage_flights')
+@app.route("/manage_flights")
 def manage_flights():
-    return render_template('manage_flights.html')
+    if session.get("user_type") != "manager":
+        return redirect("/login")
 
+    # הפעולה הקריטית: שליפת הרשימה ושליחתה לדף
+    airports_list = get_all_airports()
+    print(f"DEBUG: Found airports: {airports_list}")  # הדפסה לטרמינל כדי שתוכל לראות אם חזר מידע
+
+    return render_template("manage_flights.html", airports=airports_list)
 
 @app.route('/manage_orders')
-def manage_orders():
-    return "Order Management Page - Coming Soon"
+def manage_orders_page():
+    # 1. קבלת פרמטרי הפילטור מה-URL
+    origin_q = request.args.get('origin', '').strip()
+    dest_q = request.args.get('destination', '').strip()
+    date_q = request.args.get('departure_date', '').strip()
+
+    flights_data = []
+
+    # 2. בניית השאילתה הבסיסית (רק טיסות עם הזמנות פעילות)
+    query = """
+        SELECT DISTINCT 
+            f.ID AS flight_id, 
+            f.Departure_DateTime AS departure, 
+            f.Path_Origin_Airport AS origin, 
+            f.Path_Dest_Airport AS destination
+        FROM flight f
+        JOIN `Order` o ON f.ID = o.Flight_ID
+        WHERE o.Status != 'System Cancelation'
+        AND f.is_active = 1 
+    """
+    params = []
+
+    # 3. הוספת פילטרים באופן דינמי
+    if origin_q:
+        query += " AND f.Path_Origin_Airport LIKE %s"
+        params.append(f"%{origin_q}%")
+
+    if dest_q:
+        query += " AND f.Path_Dest_Airport LIKE %s"
+        params.append(f"%{dest_q}%")
+
+    if date_q:
+        # פילטור לפי תאריך בלבד (מתעלם מהשעה ב-DB)
+        query += " AND DATE(f.Departure_DateTime) = %s"
+        params.append(date_q)
+
+    # מיון לפי התאריך הקרוב ביותר
+    query += " ORDER BY f.Departure_DateTime ASC"
+
+    try:
+        with get_db_connection() as cursor:
+            cursor.execute(query, tuple(params))
+            flights_data = cursor.fetchall()
+    except Exception as e:
+        print(f"Database error: {e}")
+
+    # 4. שליחת הנתונים ל-HTML
+    return render_template('manager_manage_order.html', flights=flights_data)
 
 @app.route('/view_reports')
 def view_reports():
@@ -853,40 +902,51 @@ def save_plane_route():
 
 @app.route('/validate_route', methods=['POST'])
 def validate_route():
-    origin = request.form.get('origin').upper()
-    dest = request.form.get('dest').upper()
+    origin = request.form.get('origin', '').upper()
+    dest = request.form.get('dest', '').upper()
+
+    if not origin or not dest:
+        flash("Please select both origin and destination.")
+        return redirect(url_for('manage_flights_page'))
 
     if origin == dest:
         flash("Origin and Destination cannot be the same.")
-        return redirect(url_for('manage_flights'))
+        return redirect(url_for('manage_flights_page'))
 
+    # בדיקה האם הנתיב קיים
     path_data = get_path_info(origin, dest)
 
     if path_data:
+        # אם קיים, עוברים ישר לבחירת תאריך ושעה
         return render_template('select_date_time.html', origin=origin, dest=dest)
     else:
+        # אם המנהל הזין ידנית נתיב שלא קיים, עוברים להקמתו
         return render_template('create_new_path.html', origin=origin, dest=dest)
 
 
 @app.route('/save_path_and_continue', methods=['POST'])
 def save_path_and_continue():
-    origin = request.form.get('origin')
-    dest = request.form.get('dest')
+    # שליפת הנתונים מהטופס של create_new_path.html
+    origin = request.form.get('origin').upper()
+    dest = request.form.get('dest').upper()
     duration = float(request.form.get('duration'))
     o_tz = int(request.form.get('origin_tz'))
     d_tz = int(request.form.get('dest_tz'))
 
     try:
-        add_new_path(origin, dest, duration, o_tz, d_tz)
+        # הוספה פיזית לטבלת ה-path ב-DB
+        create_path(origin, dest, duration, o_tz, d_tz)
+        print(f"DEBUG: New path {origin}-{dest} added successfully.")
     except Exception as e:
+        # אם במקרה הנתיב נוצר על ידי מישהו אחר באותו זמן (כפילות)
         if "1062" in str(e):
-            print(f"Path {origin}-{dest} already exists. Proceeding...")
+            print(f"DEBUG: Path {origin}-{dest} already exists.")
         else:
             print(f"Database error: {e}")
             return f"Error: {str(e)}", 500
 
+    # אחרי השמירה, עוברים לשלב הבא: בחירת תאריך ושעה לטיסה הספציפית
     return render_template('select_date_time.html', origin=origin, dest=dest)
-
 
 @app.route('/get_available_resources', methods=['POST'])
 def step_2_select_plane():
@@ -1040,6 +1100,30 @@ def finalize_flight_creation():
         print(f"Finalize Error: {e}")
         return f"System Error: {str(e)}", 500
 
+
+@app.route('/confirm_cancelation', methods=['POST'])
+def confirm_cancelation_route():
+    f_id = request.form.get('flight_id')
+
+    # 1. שליפת נתונים לסיכום (לפני הביטול)
+    with get_db_connection() as cursor:
+        cursor.execute("SELECT COUNT(*) FROM `Order` WHERE Flight_ID = %s", (f_id,))
+        orders_count = cursor.fetchone()[0]
+
+        cursor.execute("SELECT Path_Origin_Airport, Path_Dest_Airport FROM flight WHERE ID = %s", (f_id,))
+        flight_data = cursor.fetchone()
+        origin, dest = flight_data[0], flight_data[1]
+
+    # 2. ביצוע הביטול ב-utils
+    if process_system_cancellation(f_id):
+        # 3. מעבר לדף הסיכום שכבר הקמת עם הנתונים
+        return render_template('cancel_summary.html',
+                               flight_id=f_id,
+                               orders_count=orders_count,
+                               origin=origin,
+                               dest=dest)
+
+    return redirect('/manage_orders?status=error')
 
 if __name__ == "__main__":
     app.run(debug=True)

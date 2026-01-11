@@ -47,7 +47,40 @@
             animation: float 6s ease-in-out infinite;
         }
         .hidden { display: none !important; }
-        /* Styling for the ticket result display */
+
+        /* התאמות עיצוב לטופס הכניסה והטלפונים */
+        .login-card {
+            max-width: 500px;
+            margin: 60px auto;
+        }
+
+        .airport-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            background-color: white;
+            font-size: 1rem;
+            color: #1f2937;
+            height: 42px;
+        }
+
+        .phone-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .btn-danger-small {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 0 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: bold;
+        }
+
         .ticket-info-box {
             margin-top: 20px;
             padding: 20px;
@@ -55,11 +88,13 @@
             border-radius: var(--radius-md);
             background-color: #f9fafb;
         }
+
         .ticket-header {
             border-bottom: 2px solid var(--color-primary);
             margin-bottom: 15px;
             padding-bottom: 5px;
         }
+
         .cancel-warning {
             background-color: #fee2e2;
             color: #b91c1c;
@@ -129,32 +164,47 @@
                         </div>
                     {% endif %}
 
-                    <form action="{{ url_for('guest_sign_in_route') }}" method="POST" class="space-y-5">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="email">Email Address</label>
-                            <div class="mt-1 relative rounded-md shadow-sm">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span class="material-icons text-gray-400 text-sm">email</span>
-                                </div>
-                                <input class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary sm:text-sm bg-white dark:bg-surface-dark dark:text-white transition-colors" id="email" name="email" placeholder="example@mail.com" value="{{ last_email if last_email else '' }}" required type="email"/>
+        {% if not session.get('guest_email') %}
+        <div class="login-card">
+            <section class="card">
+                <div class="card-header">
+                    <h1 class="card-title">Guest Sign-In</h1>
+                    <p class="text-muted">Enter your details </p>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                        <div class="alert alert-error mb-md">{{ error }}</div>
+                    {% endif %}
+                    <form action="{{ url_for('guest_sign_in_route') }}" method="POST">
+                        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                            <div style="flex: 1;">
+                                <label for="first_name">First Name</label>
+                                <input type="text" id="first_name" name="first_name" class="form-control" placeholder="English only" required>
+                            </div>
+                            <div style="flex: 1;">
+                                <label for="last_name">Last Name</label>
+                                <input type="text" id="last_name" name="last_name" class="form-control" placeholder="English only" required>
                             </div>
                         </div>
 
-                        <div class="pt-2">
-                            <button class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-semibold text-white bg-secondary hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary transition-all hover:-translate-y-0.5" type="submit">
-                            Continue to Flights
-                        </button>
+                        <div class="form-group mb-md">
+                            <label for="guest-email">Email Address</label>
+                            <input type="email" id="guest-email" name="email" class="form-control" placeholder="example@mail.com" value="{{ last_email if last_email else '' }}" required>
                         </div>
-                    </form>
 
-                    <div class="relative py-6">
-                        <div class="absolute inset-0 flex items-center">
-                            <div class="w-full border-t border-gray-200 dark:border-gray-600"></div>
+                        <div class="form-group mb-md" id="phone-container">
+                            <label>Phone Number(s)</label>
+                            <div class="phone-row">
+                                <input type="tel" name="phones" class="form-control" placeholder="e.g. 0501234567" required>
+                                <button type="button" class="btn btn-secondary" onclick="addGuestPhoneField()">+</button>
+                            </div>
                         </div>
-                        <div class="relative flex justify-center text-sm">
-                            <span class="px-2 bg-surface-light dark:bg-surface-dark text-gray-500 dark:text-gray-400">or</span>
-                        </div>
-                    </div>
+
+                        <button type="submit" class="btn btn-primary w-100 mt-md">Sign IN </button>
+                    </form>
+                </div>
+            </section>
+        </div>
 
                     <div class="space-y-3">
                         <a 
@@ -200,26 +250,40 @@
 
         <section id="section-book" class="card mt-xl {{ 'hidden' if show_manage else '' }}">
             <div class="card-header">
-                <h1 class="card-title">Welcome, Guest!</h1>
+                <h1 class="card-title">Welcome, {{ session.get('guest_name', 'Guest') }}!</h1>
                 <p class="text-muted">Search for flights to book your next trip.</p>
             </div>
             <div class="card-body">
                 <form id="flight-search-form" class="flight-search-form">
                     <div class="flight-search-fields">
+
                         <div class="flight-field">
                             <label for="origin_airport">Origin</label>
-                            <input type="text" id="origin_airport" name="origin_airport" placeholder="TLV" class="airport-input" required>
+                            <select id="origin_airport" name="origin_airport" class="airport-select" required>
+                                <option value="" disabled selected>Origin</option>
+                                {% for airport in airports %}
+                                    <option value="{{ airport }}">{{ airport }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
+
                         <div class="flight-path-icon">
                             <svg width="60" height="40" viewBox="0 0 60 40">
                                 <path d="M 5 20 Q 30 5, 55 20" stroke="var(--color-primary-light)" stroke-width="2" fill="none" stroke-dasharray="5,5"/>
                                 <path d="M 25 18 L 30 20 L 25 22 L 28 20 Z" fill="var(--color-primary)" transform="translate(5, 0)"/>
                             </svg>
                         </div>
+
                         <div class="flight-field">
                             <label for="destination_airport">Where to?</label>
-                            <input type="text" id="destination_airport" name="destination_airport" placeholder="Where to?" class="airport-input" required>
+                            <select id="destination_airport" name="destination_airport" class="airport-select" required>
+                                <option value="" disabled selected>Destination</option>
+                                {% for airport in airports %}
+                                    <option value="{{ airport }}">{{ airport }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
+
                         <div class="flight-field">
                             <label for="departure_date">Departure</label>
                             <input type="date" id="departure_date" name="departure_date" required>
@@ -296,9 +360,17 @@
             </section>
         </main>
     <script>
-        /**
-         * Toggles visibility between Booking and Management sections
-         */
+        function addGuestPhoneField() {
+            const container = document.getElementById('phone-container');
+            const div = document.createElement('div');
+            div.className = 'phone-row';
+            div.innerHTML = `
+                <input type="tel" name="phones" class="form-control" placeholder="Additional phone">
+                <button type="button" class="btn-danger-small" onclick="this.parentElement.remove()">-</button>
+            `;
+            container.appendChild(div);
+        }
+
         function showTab(tabName) {
             document.getElementById('section-book').classList.toggle('hidden', tabName !== 'book');
             document.getElementById('section-manage').classList.toggle('hidden', tabName !== 'manage');
@@ -306,110 +378,7 @@
             document.getElementById('tab-manage').classList.toggle('active', tabName === 'manage');
         }
 
-        // Future flights loading and rendering functions
-        async function loadFutureFlights(page) {
-            const flightsList = document.getElementById('future-flights-list');
-            const paginationDiv = document.getElementById('future-flights-pagination');
-            
-            if (!flightsList) return; // Only load if section exists (guest is signed in)
-            
-            flightsList.innerHTML = '<p class="text-muted">Loading upcoming flights...</p>';
-            if (paginationDiv) paginationDiv.innerHTML = '';
-
-            try {
-                const response = await fetch(`/get_future_flights?page=${page}`);
-                const data = await response.json();
-
-                if (data.error) {
-                    flightsList.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
-                } else {
-                    renderFutureFlights(data);
-                    renderPagination(data);
-                }
-            } catch (error) {
-                flightsList.innerHTML = `<div class="alert alert-error">An error occurred while loading flights. Please try again.</div>`;
-            }
-        }
-
-        function renderFutureFlights(data) {
-            const flightsList = document.getElementById('future-flights-list');
-            
-            if (!flightsList) return;
-            
-            if (!data.flights || data.flights.length === 0) {
-                flightsList.innerHTML = '<p class="text-muted">No upcoming flights available.</p>';
-                return;
-            }
-
-            let html = '<div class="flight-results-list">';
-            data.flights.forEach(flight => {
-                html += `
-                    <div class="flight-result-card">
-                        <div class="flight-route">
-                            <span class="airport-code-large">${flight.origin_airport}</span>
-                            <span class="flight-arrow">→</span>
-                            <span class="airport-code-large">${flight.destination_airport}</span>
-                        </div>
-                        <div class="flight-details">
-                            <p><strong>Departure:</strong> ${flight.departure_datetime}</p>
-                            <p><strong>Arrival:</strong> ${flight.arrival_datetime}</p>
-                            <p><strong>Economy:</strong> $${flight.economy_seat_price}</p>
-                            <p><strong>Business:</strong> $${flight.business_seat_price}</p>
-                            <button class="btn btn-primary btn-sm" onclick="location.href='/select_seat?flight_id=${flight.flight_id}'">Select</button>
-                        </div>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            flightsList.innerHTML = html;
-        }
-
-        function renderPagination(data) {
-            const paginationDiv = document.getElementById('future-flights-pagination');
-            
-            if (!paginationDiv) return;
-            
-            if (data.total_pages <= 1) {
-                paginationDiv.innerHTML = '';
-                return;
-            }
-
-            let html = '';
-            
-            // Previous button
-            if (data.page > 1) {
-                html += `<button class="btn btn-secondary btn-sm" onclick="loadFutureFlights(${data.page - 1})">Previous</button>`;
-            } else {
-                html += `<button class="btn btn-secondary btn-sm" disabled>Previous</button>`;
-            }
-
-            // Page indicator
-            html += `<span style="padding: 0 1rem;">Page ${data.page} of ${data.total_pages}</span>`;
-
-            // Next button
-            if (data.page < data.total_pages) {
-                html += `<button class="btn btn-secondary btn-sm" onclick="loadFutureFlights(${data.page + 1})">Next</button>`;
-            } else {
-                html += `<button class="btn btn-secondary btn-sm" disabled>Next</button>`;
-            }
-
-            paginationDiv.innerHTML = html;
-        }
-
-        // Load future flights on page load (only if guest is signed in)
-        document.addEventListener('DOMContentLoaded', function() {
-            const flightSearchForm = document.getElementById('flight-search-form');
-            if (flightSearchForm) {
-                loadFutureFlights(1);
-            }
-        });
-
-        /**
-         * AJAX search logic for finding flights
-         */
-        const flightSearchForm = document.getElementById('flight-search-form');
-        if (flightSearchForm) {
-            flightSearchForm.addEventListener('submit', async function(e) {
+        document.getElementById('flight-search-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             const resultsDiv = document.getElementById('search-results');
             resultsDiv.classList.remove('hidden');

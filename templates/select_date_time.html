@@ -12,11 +12,9 @@
                 <h1 class="card-title">Step 2: Scheduling</h1>
             </div>
 
-            <div class="card-body">
-                <div class="alert alert-info text-center mb-lg">
-                    <div style="font-size: 1.4rem; font-weight: bold;">
-                        {{ origin }} <span class="text-primary">✈</span> {{ dest }}
-                    </div>
+                <div class="form-group">
+                    <label style="color: #003366; font-weight: bold; display: block; margin-bottom: 8px;">Departure Date & Time</label>
+                    <input type="datetime-local" id="departure_input" name="departure_time" class="date-input" required>
                 </div>
                 <p class="text-muted text-center mb-lg">Route confirmed. Select the departure local time.</p>
 
@@ -42,11 +40,10 @@
     <script>
         const dateInput = document.getElementById('departure_input');
 
-        // פונקציה שמחזירה מחרוזת זמן מקומי בפורמט שהדפדפן דורש (YYYY-MM-DDTHH:mm)
-        function getNowString() {
-            const now = new Date();
-            const offset = now.getTimezoneOffset() * 60000;
-            return new Date(now - offset).toISOString().slice(0, 16);
+        if (selected <= now) {
+            alert("⚠️ Error: Departure time must be in the future!");
+            e.preventDefault();
+            return false;
         }
 
         // הגדרת המינימום בלוח השנה

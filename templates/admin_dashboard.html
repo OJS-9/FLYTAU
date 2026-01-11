@@ -20,9 +20,10 @@
 
         <div class="card-body">
           <div class="flex flex-column gap-md">
-            <a href="{{ url_for('manage_orders') }}" class="btn btn-primary w-full">Manage Orders</a>
+            <a href="{{ url_for('manage_orders_page') }}" class="btn btn-primary w-full">Manage Orders</a>
             <a href="{{ url_for('manage_flights') }}" class="btn btn-primary w-full">Manage Flights</a>
             <a href="{{ url_for('view_reports') }}" class="btn btn-primary w-full">View Management Reports</a>
+            <hr class="my-sm" style="border: 0; border-top: 1px solid #e5e7eb;">
             <a href="{{ url_for('add_plane') }}" class="btn btn-primary w-full">Add a new plane</a>
             <a href="{{ url_for('add_pilot_page') }}" class="btn btn-primary w-full">Add a pilot to FLYTAU crew</a>
             <a href="{{ url_for('add_steward') }}" class="btn btn-primary w-full">Add a steward to FLYTAU crew</a>
