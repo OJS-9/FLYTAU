@@ -895,25 +895,36 @@ def save_plane_route():
     try:
         manufacturer = request.form.get('manufacturer')
         size = request.form.get('size')
-        eco_cap = int(request.form.get('eco_cap'))
-        bus_cap = int(request.form.get('bus_cap'))
+        eco_cap = int(request.form.get('eco_cap', 0))
+        bus_cap = int(request.form.get('bus_cap', 0))
         purchase_date = request.form.get('purchase_date')
 
-        # Call the utility function
-        plane_id = create_aircraft_with_seats(manufacturer, size, eco_cap, bus_cap, purchase_date)
+        # Business logic: Small aircraft do not have a Business Class
+        if size == 'Small':
+            bus_cap = 0
 
-        # Instead of redirecting to dashboard, show the summary
+        # Call the utility function to insert into 'plane' and generate 'class' records
+        plane_id = create_aircraft_with_seats(
+            manufacturer=manufacturer,
+            size=size,
+            eco_cap=eco_cap,
+            bus_cap=bus_cap,
+            purchase_date=purchase_date
+        )
+
+        # Render the success page with a summary of the added aircraft
         return render_template('plane_success.html',
                                plane_id=plane_id,
                                manufacturer=manufacturer,
+                               size=size,
                                eco_cap=eco_cap,
                                bus_cap=bus_cap,
                                total_cap=eco_cap + bus_cap)
 
     except Exception as e:
-        print(f"Error: {e}")
+        # Log the error for debugging purposes
+        print(f"Error in save_plane_route: {e}")
         return f"System Error: {str(e)}", 500
-
 
 @app.route('/validate_route', methods=['POST'])
 def validate_route():
