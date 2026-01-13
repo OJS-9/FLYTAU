@@ -268,7 +268,7 @@ def logout():
 def search_flights_route():
 
     if request.method == "GET":
-        airports = get_all_airports()  # קריאה לפונקציה החדשה ב-utils
+        airports = get_all_airports()
 
         return render_template("customer_search.html", airports=airports)
 
@@ -563,22 +563,20 @@ def manage_flights():
     if session.get("user_type") != "manager":
         return redirect("/login")
 
-    # הפעולה הקריטית: שליפת הרשימה ושליחתה לדף
+
     airports_list = get_all_airports()
-    print(f"DEBUG: Found airports: {airports_list}")  # הדפסה לטרמינל כדי שתוכל לראות אם חזר מידע
+    print(f"DEBUG: Found airports: {airports_list}")
 
     return render_template("manage_flights.html", airports=airports_list)
 
 @app.route('/manage_orders')
 def manage_orders_page():
-    # 1. קבלת פרמטרי הפילטור מה-URL
     origin_q = request.args.get('origin', '').strip()
     dest_q = request.args.get('destination', '').strip()
     date_q = request.args.get('departure_date', '').strip()
 
     flights_data = []
 
-    # 2. בניית השאילתה הבסיסית (רק טיסות עם הזמנות פעילות)
     query = """
         SELECT DISTINCT 
             f.ID AS flight_id, 
@@ -592,7 +590,7 @@ def manage_orders_page():
     """
     params = []
 
-    # 3. הוספת פילטרים באופן דינמי
+
     if origin_q:
         query += " AND f.Path_Origin_Airport LIKE %s"
         params.append(f"%{origin_q}%")
@@ -949,29 +947,23 @@ def validate_route():
         # אם המנהל הזין ידנית נתיב שלא קיים, עוברים להקמתו
         return render_template('create_new_path.html', origin=origin, dest=dest)
 
+@app.route('/admin/create-new-path-manual')
+def create_new_path_manual():
+    return render_template('create_new_path.html', origin='', dest='')
 
 @app.route('/save_path_and_continue', methods=['POST'])
 def save_path_and_continue():
-    # שליפת הנתונים מהטופס של create_new_path.html
+
     origin = request.form.get('origin').upper()
     dest = request.form.get('dest').upper()
     duration = float(request.form.get('duration'))
     o_tz = int(request.form.get('origin_tz'))
     d_tz = int(request.form.get('dest_tz'))
 
-    try:
-        # הוספה פיזית לטבלת ה-path ב-DB
-        create_path(origin, dest, duration, o_tz, d_tz)
-        print(f"DEBUG: New path {origin}-{dest} added successfully.")
-    except Exception as e:
-        # אם במקרה הנתיב נוצר על ידי מישהו אחר באותו זמן (כפילות)
-        if "1062" in str(e):
-            print(f"DEBUG: Path {origin}-{dest} already exists.")
-        else:
-            print(f"Database error: {e}")
-            return f"Error: {str(e)}", 500
+    success = create_path(origin, dest, duration, o_tz, d_tz)
+    if not success:
+        print(f"Notice: Path {origin}-{dest} was already in DB.")
 
-    # אחרי השמירה, עוברים לשלב הבא: בחירת תאריך ושעה לטיסה הספציפית
     return render_template('select_date_time.html', origin=origin, dest=dest)
 
 @app.route('/get_available_resources', methods=['POST'])

@@ -776,14 +776,24 @@ def get_available_resources(origin, dest, departure_time):
 
     return resources
 
+
 def create_path(origin, dest, duration, origin_tz, dest_tz):
     with get_db_connection() as cursor:
-        query = """
+
+        check_query = "SELECT 1 FROM path WHERE Origin_Airport = %s AND Dest_Airport = %s"
+        cursor.execute(check_query, (origin, dest))
+
+        if cursor.fetchone():
+            print(f"DEBUG: Path {origin}-{dest} already exists. Skipping insert.")
+            return False
+
+        insert_query = """
             INSERT INTO path (Origin_Airport, Dest_Airport, Duration, 
                               Origin_Timezone, Dest_Timezone)
             VALUES (%s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (origin, dest, duration, origin_tz, dest_tz))
+        cursor.execute(insert_query, (origin, dest, duration, origin_tz, dest_tz))
+        return True
 
 def get_path_info(origin, dest):
     with get_db_connection() as cursor:

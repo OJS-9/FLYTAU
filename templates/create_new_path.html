@@ -1,47 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>New Route Setup - FLYTAU</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .flex-row { display: flex; gap: 20px; }
+        .flex-1 { flex: 1; }
+        .text-uppercase { text-transform: uppercase; }
+        .font-bold { font-weight: 600; }
+        .mt-xl { margin-top: 2rem; }
+    </style>
 </head>
 <body>
 <div class="container">
     <div class="card mt-xl p-lg shadow-md" style="max-width: 600px; margin: auto;">
-        <div class="card-header mb-lg">
-            <h2 class="text-primary">New Route Detected</h2>
-            <div class="badge bg-warning-light text-warning">
-                {{ origin }} <span class="mx-sm">✈</span> {{ dest }}
-            </div>
-            <p class="text-muted mt-md">This route isn't in our records. Please provide flight details to continue.</p>
+        <div class="card-header text-center mb-lg">
+            <h2 class="text-primary">Create New Flight Route</h2>
+            <p class="text-muted">Enter the IATA codes and flight parameters for the new route.</p>
         </div>
 
         <form action="/save_path_and_continue" method="POST">
-            <input type="hidden" name="origin" value="{{ origin }}">
-            <input type="hidden" name="dest" value="{{ dest }}">
+
+            <div class="flex-row mb-md">
+                <div class="flex-1">
+                    <label class="form-label font-bold">Origin Airport (IATA):</label>
+                    <input type="text"
+                           name="origin"
+                           class="form-control text-uppercase"
+                           placeholder="e.g. TLV"
+                           maxlength="3"
+                           pattern="[A-Za-z]{3}"
+                           required>
+                </div>
+                <div class="flex-1">
+                    <label class="form-label font-bold">Destination Airport (IATA):</label>
+                    <input type="text"
+                           name="dest"
+                           class="form-control text-uppercase"
+                           placeholder="e.g. JFK"
+                           maxlength="3"
+                           pattern="[A-Za-z]{3}"
+                           required>
+                </div>
+            </div>
 
             <div class="form-group mb-md">
-                <label class="form-label">Flight Duration (Net Hours):</label>
-                <input type="number" step="0.1" name="duration" class="form-control"
-                       placeholder="e.g. 5.5" required>
-                <small class="text-muted">The actual flying time in hours.</small>
+                <label class="form-label font-bold">Flight Duration (Net Hours):</label>
+                <input type="number"
+                       step="0.1"
+                       min="0.1"
+                       name="duration"
+                       class="form-control"
+                       placeholder="e.g. 5.5"
+                       required>
+                <small class="text-muted">Actual flying time in decimal hours.</small>
             </div>
 
-            <div class="row gap-md">
-                <div class="col">
-                    <label class="form-label">{{ origin }} Timezone:</label>
-                    <input type="number" name="origin_tz" class="form-control"
-                           placeholder="UTC+ (e.g. 2)" required>
+            <div class="flex-row mb-md">
+                <div class="flex-1">
+                    <label class="form-label font-bold">Origin Timezone (UTC):</label>
+                    <input type="number"
+                           name="origin_tz"
+                           class="form-control"
+                           placeholder="e.g. 2"
+                           required>
                 </div>
-                <div class="col">
-                    <label class="form-label">{{ dest }} Timezone:</label>
-                    <input type="number" name="dest_tz" class="form-control"
-                           placeholder="UTC- (e.g. -5)" required>
+                <div class="flex-1">
+                    <label class="form-label font-bold">Destination Timezone (UTC):</label>
+                    <input type="number"
+                           name="dest_tz"
+                           class="form-control"
+                           placeholder="e.g. -5"
+                           required>
                 </div>
             </div>
 
-            <div class="mt-xl flex gap-md">
-                <button type="submit" class="btn btn-primary flex-1">Save Route & Next Step</button>
-                <a href="{{ url_for('manage_flights') }}" class="btn btn-ghost">Cancel</a>
+            <div class="alert alert-info mb-lg">
+                <small><strong>Note:</strong> This route will be saved to the database for future use.</small>
+            </div>
+
+            <div class="mt-xl flex-row">
+                <button type="submit" class="btn btn-primary flex-1">Save Route & Continue</button>
+                <a href="{{ url_for('manage_flights') }}" class="btn btn-ghost" style="flex: 0.5; text-align: center;">Cancel</a>
             </div>
         </form>
     </div>
