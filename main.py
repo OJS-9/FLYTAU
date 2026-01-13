@@ -266,22 +266,30 @@ def logout():
 
 @app.route("/search_flights", methods=["POST", "GET"])
 def search_flights_route():
+    """
+    Handles flight search requests for customers and guests.
+    Supports both GET (query parameters) and POST (form data).
+    """
 
-    if request.method == "GET":
+    # 1. Provide the search page on a simple GET request without parameters
+    if request.method == "GET" and not request.args.get("origin_airport"):
         airports = get_all_airports()
-
         return render_template("customer_search.html", airports=airports)
+
+    # 2. Determine data source (URL arguments for GET, Form data for POST)
+    data = request.args if request.method == "GET" else request.form
 
     user_type = session.get("user_type")
     if user_type not in ["customer", "guest"]:
         return jsonify({"error": "You must be signed in to search flights."}), 401
 
-    origin_airport = request.form.get("origin_airport", "").strip().upper()
-    destination_airport = request.form.get("destination_airport", "").strip().upper()
-    departure_date = request.form.get("departure_date", "").strip()
-    passengers = request.form.get("passengers", "1").strip()
+    # 3. Extract and sanitize input data
+    origin_airport = data.get("origin_airport", "").strip().upper()
+    destination_airport = data.get("destination_airport", "").strip().upper()
+    departure_date = data.get("departure_date", "").strip()
+    passengers = data.get("passengers", "1").strip()
 
-    # 3. Server-side validation
+    # 4. Server-side validation
     errors = []
 
     if not origin_airport or len(origin_airport) != 3:
@@ -297,19 +305,20 @@ def search_flights_route():
         errors.append("Departure date is required.")
     else:
         try:
+            # Validate date is not in the past
             date_obj = datetime.strptime(departure_date, "%Y-%m-%d")
             if date_obj.date() < datetime.now().date():
                 errors.append("Departure date cannot be in the past.")
         except ValueError:
             errors.append("Invalid date format. Please use YYYY-MM-DD.")
 
-    # 4. Handle passenger count and session storage
+    # 5. Handle passenger count
     try:
         passengers_int = int(passengers)
         if passengers_int < 1 or passengers_int > 9:
             errors.append("Number of passengers must be between 1 and 9.")
         else:
-            # Store passenger count in session for the seat selection logic
+            # Store in session for future booking steps
             session['passengers'] = passengers_int
             session["search_passengers"] = passengers_int
     except ValueError:
@@ -318,18 +327,26 @@ def search_flights_route():
     if errors:
         return jsonify({"error": " ".join(errors)}), 400
 
-    # 5. Execute search using the updated schema (direct Flight_ID in Order table)
+    # 6. Execute search in Database
     try:
-        # Pass passengers_int to ensure the flight has enough free seats
+        # Note: Ensure search_flights in utils.py uses DATE(Departure_DateTime)
         flights = search_flights(origin_airport, destination_airport, departure_date, passengers_int)
 
-        # Return results to be rendered on the client side
-        return jsonify({"flights": flights, "count": len(flights)})
+        # Return JSON response for AJAX-based frontends
+        return jsonify({
+            "flights": flights,
+            "count": len(flights),
+            "search_params": {
+                "origin": origin_airport,
+                "dest": destination_airport,
+                "date": departure_date
+            }
+        })
 
     except Exception as e:
-        # Log the internal error and return a generic user-friendly message
-        print(f"Database Error: {e}")
-        return jsonify({"error": "An error occurred while searching for flights. Please try again."}), 500
+        # Log error for debugging
+        print(f"Database Error during search: {e}")
+        return jsonify({"error": "An internal error occurred. Please try again later."}), 500
 
 @app.route("/get_future_flights", methods=["GET"])
 def get_future_flights_route():
@@ -358,50 +375,57 @@ def get_future_flights_route():
         print(f"Database Error: {e}")
         return jsonify({"error": "An error occurred while fetching future flights. Please try again."}), 500
 
+
 @app.route("/manage_reservations")
 def manage_reservations():
+    """
+    Search and retrieve flight reservation details for both Guests and Customers.
+    Redirects to specific dashboards or renders detailed views based on user type.
+    """
     order_id = request.args.get('order_id')
     user_email = session.get('user_email')
     guest_email = session.get('guest_email')
+
+    # Identify the active email session
     email = user_email or guest_email
 
+    # 1. Validation: Ensure both Order ID and Session Email exist
     if not order_id or not email:
-        flash("Please provide a valid Order ID.")
-        # Redirect based on user type
-        if user_email:
-            return redirect(url_for('user_dashboard'))
-        else:
-            return redirect(url_for('guest_dashboard'))
+        flash("Please provide a valid Order ID and ensure you are logged in.")
+        return redirect(url_for('user_dashboard' if user_email else 'guest_dashboard_route'))
 
-    # Update active orders to completed before fetching ticket details
+    # 2. Maintenance: Refresh order statuses (Active -> Completed) before fetching
     update_active_orders_to_completed()
 
-    # Fetch details using the updated logic from utils.py
+    # 3. Data Retrieval: Attempt to fetch ticket details from the database
     try:
+        # We use the email to ensure a user can only view THEIR own orders
         ticket = get_ticket_details(int(order_id), email)
     except Exception as e:
+        print(f"Error retrieving ticket {order_id}: {e}")
         ticket = None
 
+    # 4. Error Handling: No ticket found for this specific email/ID combination
     if not ticket:
-        # If no ticket is found for this email, flash an alert and redirect
-        error_msg = f"Order #{order_id} is not associated with your account or does not exist."
+        error_msg = f"Order #{order_id} was not found or is not linked to your email."
         flash(error_msg)
-        # Redirect based on user type
-        if user_email:
-            return redirect(url_for('user_dashboard'))
-        else:
-            return redirect(url_for('guest_dashboard'))
+        return redirect(url_for('user_dashboard' if user_email else 'guest_dashboard_route'))
 
-    # Check user type and render appropriate template
+    # 5. Routing: Render the correct template based on User Type
     if user_email:
-        # Customer: render manage_order.html
-        # Add Passenger_Email to the ticket dict for the template
+        # REGISTERED CUSTOMER: Pass data to the dedicated management page
         order_data = ticket.copy()
         order_data['Passenger_Email'] = user_email
+        # Ensure 'manage_order.html' exists for customers
         return render_template("manage_order.html", order=order_data)
     else:
-        # Guest: render guest.html (current behavior)
-        return render_template("guest.html", ticket=ticket, show_manage=True)
+        # GUEST USER: Return to the guest dashboard but with the ticket details populated
+        # IMPORTANT: Ensure 'guest_dashboard.html' has the logic to display the 'ticket' variable
+        airports = get_all_airports()  # Guests usually need the airport list for the search bar
+        return render_template("guest.html",
+                               ticket=ticket,
+                               show_manage=True,
+                               airports=airports)
 
 @app.route("/cancel_order", methods=["POST"])
 def cancel_order_route():
@@ -423,7 +447,7 @@ def cancel_order_route():
                 # Add Passenger_Email to the order data for the template
                 order_data = order_data.copy()
                 order_data['Passenger_Email'] = email
-            return render_template("manage_order.html", order=order_data, error_message=message)
+            return render_template("cancel_summary.html", order=order_data, error_message=message)
 
     return "Invalid Request", 400
 
