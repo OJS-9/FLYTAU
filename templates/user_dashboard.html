@@ -1,188 +1,177 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Dashboard - FLYTAU</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+
     <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; color: #1E293B; }
         .hidden { display: none !important; }
-        .airport-select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            background-color: white;
-            font-size: 1rem;
-            color: #1f2937;
-            outline-color: var(--color-primary);
-        }
-        .flight-results-list { margin-top: 1.5rem; }
+        .active-tab { border-bottom: 4px solid #007B8F; color: #007B8F !important; }
+        .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid #E2E8F0; }
+
+        /* התאמת אלמנטים קיימים לסטייל החדש */
+        .btn-primary { @apply bg-[#007B8F] text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-[#006677] transition-all; }
+        .btn-secondary { @apply bg-[#0B253A] text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-[#1a3a5a] transition-all; }
     </style>
-  </head>
-  <body>
-    <main class="container">
-      <nav class="flight-nav">
-        <a href="javascript:void(0)" id="tab-book" class="flight-nav-item active" onclick="showTab('book')">Book A Flight</a>
-        <a href="javascript:void(0)" id="tab-manage" class="flight-nav-item" onclick="showTab('manage')">My Bookings</a>
-        <a href="{{ url_for('logout') }}" class="flight-nav-item" style="margin-left: auto; color: #dc2626;">Logout ({{ user_email }})</a>
-      </nav>
+</head>
 
-      {% with messages = get_flashed_messages() %}
-        {% if messages %}
-          {% for message in messages %}
-            <div class="alert alert-error mt-md">{{ message }}</div>
-          {% endfor %}
-        {% endif %}
-      {% endwith %}
-
-      {% if error %}
-        <div class="alert alert-error mt-md">{{ error }}</div>
-      {% endif %}
-
-      <section id="section-book" class="card mt-xl">
-        <div class="card-header">
-          <h1 class="card-title">Welcome, {{ user_name or 'Customer' }}!</h1>
-          <p class="text-muted">Where would you like to fly next?</p>
-        </div>
-
-        <div class="card-body">
-          <form id="flight-search-form" class="flight-search-form">
-            <div class="flight-search-fields">
-
-              <div class="flight-field">
-                <label for="origin_airport">Origin</label>
-                <select id="origin_airport" name="origin_airport" class="airport-select" required>
-                  <option value="" disabled selected>Select Origin</option>
-                  {% for airport in airports %}
-                    <option value="{{ airport }}">{{ airport }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-
-              <div class="flight-path-icon">
-                <svg width="60" height="40" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M 5 20 Q 30 5, 55 20" stroke="#CBD5E1" stroke-width="2" fill="none" stroke-dasharray="5,5"/>
-                  <path d="M 25 18 L 30 20 L 25 22 L 28 20 Z" fill="#007B8F" transform="translate(5, 0)"/>
-                </svg>
-              </div>
-
-              <div class="flight-field">
-                <label for="destination_airport">Destination</label>
-                <select id="destination_airport" name="destination_airport" class="airport-select" required>
-                  <option value="" disabled selected>Select Destination</option>
-                  {% for airport in airports %}
-                    <option value="{{ airport }}">{{ airport }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-
-              <div class="flight-field">
-                <label for="departure_date">Date</label>
-                <input type="date" id="departure_date" name="departure_date" required>
-              </div>
-
-              <div class="flight-field">
-                <label for="passengers">Passengers</label>
-                <div class="passenger-selector">
-                  <input type="number" id="passengers" name="passengers" value="1" min="1" max="9" class="passenger-input" required>
-                  <span class="seat-icon">🪑</span>
-                </div>
-              </div>
+<body class="min-h-screen">
+    <main class="container mx-auto px-4 py-8">
+        <nav class="flex bg-white rounded-xl shadow-sm mb-8 overflow-hidden border border-gray-200">
+            <button id="tab-book" class="flex-1 py-4 font-bold active-tab" onclick="showTab('book')">Book A Flight</button>
+            <button id="tab-manage" class="flex-1 py-4 font-bold text-gray-400" onclick="showTab('manage')">My Bookings</button>
+            <div class="flex items-center px-6 border-l border-gray-200">
+                <a href="{{ url_for('logout') }}" class="text-red-500 font-medium hover:underline text-sm">Logout ({{ user_email }})</a>
             </div>
+        </nav>
 
-            <div class="flight-search-actions">
-              <button type="submit" class="btn btn-primary">Find Flights</button>
-            </div>
-          </form>
-
-          <div id="search-results" class="search-results hidden"></div>
-        </div>
-      </section>
-
-      <section id="section-manage" class="card mt-xl hidden">
-        <div class="card-header">
-            <h1 class="card-title">My Bookings</h1>
-            <p class="text-muted">Manage your travel history and active reservations.</p>
-          </div>
-          <div class="card-body">
-
-            <div class="order-history-section" style="margin-bottom: 2rem;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h2 style="margin: 0;">Order History</h2>
-                {% if order_history %}
-                  <div style="max-width: 200px;">
-                    <select id="status-filter" class="airport-select" style="padding: 5px 10px; font-size: 0.85rem;">
-                      <option value="all">Show All</option>
-                      <option value="Active">Active</option>
-                      <option value="Completed">Completed</option>
-                      <option value="Costumer Cancelation">Customer Cancelled</option>
-                      <option value="System Cancelation">System Cancelled</option>
-                    </select>
-                  </div>
+        <div class="max-w-4xl mx-auto">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm rounded">{{ message }}</div>
+                    {% endfor %}
                 {% endif %}
-              </div>
+            {% endwith %}
+        </div>
 
-              {% if order_history %}
-                <div class="order-history-list">
-                  {% for order in order_history %}
-                    <div class="order-history-card" data-status="{{ order.Status }}" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; background-color: #ffffff;">
-                      <div style="display: flex; justify-content: space-between; align-items: start;">
-                        <div>
-                          <h3 style="margin: 0; font-size: 1rem;">Order #{{ order.Ticket_ID }}</h3>
-                          <p style="margin: 0.2rem 0; color: #64748b; font-size: 0.8rem;">Date: {{ order.Order_Date }}</p>
-                        </div>
-                        <span class="badge" style="padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold;
-                          {% if order.Status == 'Completed' %} background-color: #ECFDF5; color: #059669;
-                          {% elif 'Cancelation' in order.Status %} background-color: #FEF2F2; color: #DC2626;
-                          {% elif order.Status == 'Active' %} background-color: #EFF6FF; color: #2563EB;
-                          {% else %} background-color: #F8FAFC; color: #475569;{% endif %}">
-                          {{ order.Status }}
-                        </span>
-                      </div>
+        <section id="section-book" class="card p-8 max-w-6xl mx-auto">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-[#0B253A]">Welcome, {{ user_name or 'Customer' }}!</h1>
+                <p class="text-gray-500">Where would you like to fly next?</p>
+            </div>
 
-                      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 1rem; border-top: 1px solid #f1f5f9; pt: 1rem;">
-                        <div>
-                          <label style="font-size: 0.7rem; color: #94a3b8; display: block; text-transform: uppercase;">Flight</label>
-                          <span style="font-weight: 600;">{{ order.Origin }} → {{ order.Destination }}</span>
-                        </div>
-                        <div>
-                          <label style="font-size: 0.7rem; color: #94a3b8; display: block; text-transform: uppercase;">Time</label>
-                          <span style="font-weight: 500;">{{ order.Departure_Time }}</span>
-                        </div>
-                        <div>
-                          <label style="font-size: 0.7rem; color: #94a3b8; display: block; text-transform: uppercase;">Price</label>
-                          <span style="font-weight: 600; color: #059669;">${{ order.Total_Price }}</span>
-                        </div>
-                      </div>
-                    </div>
-                  {% endfor %}
+            <form id="flight-search-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-gray-600">Origin</label>
+                    <select id="origin_airport" name="origin_airport" class="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#007B8F]" required>
+                        <option value="" disabled selected>From?</option>
+                        {% for airport in airports %} <option value="{{ airport }}">{{ airport }}</option> {% endfor %}
+                    </select>
                 </div>
-              {% else %}
-                <p id="empty-state-message" style="text-align: center; padding: 3rem; background: #f8fafc; border-radius: 12px; color: #64748b;">
-                  No orders found. Once you book a flight, it will appear here.
-                </p>
-              {% endif %}
-              <p id="filtered-empty-state" class="hidden" style="text-align: center; padding: 2rem; color: #64748b;">
-                No orders match this status.
-              </p>
+
+                <div class="hidden md:flex justify-center pb-4">
+                    <span class="material-icons text-gray-300">sync_alt</span>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-gray-600">Destination</label>
+                    <select id="destination_airport" name="destination_airport" class="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#007B8F]" required>
+                        <option value="" disabled selected>To?</option>
+                        {% for airport in airports %} <option value="{{ airport }}">{{ airport }}</option> {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-gray-600">Date</label>
+                    <input type="date" id="departure_date" name="departure_date" class="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#007B8F]" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-gray-600">Passengers</label>
+                    <div class="relative">
+                        <input type="number" id="passengers" name="passengers" value="1" min="1" max="9" class="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#007B8F]" required>
+                    </div>
+                </div>
+
+                <div class="md:col-span-5 flex justify-end mt-4">
+                    <button type="submit" class="bg-[#007B8F] text-white font-bold py-3 px-12 rounded-lg shadow-md hover:bg-[#006677] transition-all">
+                        Find Flights
+                    </button>
+                </div>
+            </form>
+
+            <div id="search-results" class="mt-12 hidden"></div>
+        </section>
+
+        <section id="section-manage" class="card p-8 max-w-5xl mx-auto hidden">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-[#0B253A]">My Bookings</h1>
+                <p class="text-gray-500">Manage your travel history and active reservations.</p>
             </div>
 
-            <div style="border-top: 2px dashed #f1f5f9; padding-top: 2rem;">
-              <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">Looking for a specific Order ID?</h2>
-              <form action="{{ url_for('manage_reservations') }}" method="GET" style="display: flex; gap: 10px; max-width: 450px;">
-                <input type="number" id="order_id" name="order_id" placeholder="Enter Order ID" style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
-                <button type="submit" class="btn btn-secondary">Find</button>
-              </form>
+            <div class="order-history-section space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <h2 class="text-xl font-bold text-[#0B253A]">Order History</h2>
+                    {% if order_history %}
+                    <div class="w-full md:w-64">
+                        <select id="status-filter" class="w-full p-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#007B8F]">
+                            <option value="all">Show All Statuses</option>
+                            <option value="Active">Active</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Costumer Cancelation">Customer Cancelled</option>
+                            <option value="System Cancelation">System Cancelled</option>
+                        </select>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if order_history %}
+                <div class="grid gap-4">
+                    {% for order in order_history %}
+                    <div class="order-history-card p-6 border border-gray-100 rounded-xl bg-white shadow-sm hover:shadow-md transition-all" data-status="{{ order.Status }}">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="font-bold text-lg text-[#0B253A]">Order #{{ order.Ticket_ID }}</h3>
+                                <p class="text-xs text-gray-400">Booked: {{ order.Order_Date }}</p>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider
+                                {% if order.Status == 'Completed' %} bg-green-50 text-green-600
+                                {% elif 'Cancelation' in order.Status %} bg-red-50 text-red-600
+                                {% elif order.Status == 'Active' %} bg-blue-50 text-blue-600
+                                {% else %} bg-gray-50 text-gray-500 {% endif %}">
+                                {{ order.Status }}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-4 border-t border-gray-50 pt-4">
+                            <div>
+                                <label class="block text-[10px] uppercase font-bold text-gray-400">Route</label>
+                                <span class="text-sm font-semibold">{{ order.Origin }} → {{ order.Destination }}</span>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-bold text-gray-400">Departure</label>
+                                <span class="text-sm font-semibold">{{ order.Departure_Time }}</span>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-bold text-gray-400">Price</label>
+                                <span class="text-sm font-bold text-[#007B8F]">${{ order.Total_Price }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div id="empty-state-message" class="text-center py-12 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                    <p class="text-gray-400">No orders found. Your travel history will appear here.</p>
+                </div>
+                {% endif %}
+
+                <p id="filtered-empty-state" class="hidden text-center py-8 text-gray-400 italic">No orders match the selected filter.</p>
             </div>
-          </div>
-      </section>
+
+            <div class="mt-12 pt-8 border-t border-gray-100">
+                <h2 class="text-lg font-bold text-[#0B253A] mb-4">Find a Specific Reservation</h2>
+                <form action="{{ url_for('manage_reservations') }}" method="GET" class="flex gap-2 max-w-md">
+                    <input type="number" id="order_id" name="order_id" placeholder="Enter Order ID" class="flex-1 p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#0B253A]" required>
+                    <button type="submit" class="bg-[#0B253A] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#1a3a5a]">Find</button>
+                </form>
+            </div>
+        </section>
     </main>
 
     <script>
       function showTab(tabName) {
-        document.getElementById('section-book').classList.toggle('hidden', tabName !== 'book');
-        document.getElementById('section-manage').classList.toggle('hidden', tabName !== 'manage');
-        document.getElementById('tab-book').classList.toggle('active', tabName === 'book');
-        document.getElementById('tab-manage').classList.toggle('active', tabName === 'manage');
+        const isBook = tabName === 'book';
+        document.getElementById('section-book').classList.toggle('hidden', !isBook);
+        document.getElementById('section-manage').classList.toggle('hidden', isBook);
+        document.getElementById('tab-book').className = `flex-1 py-4 font-bold transition-all ${isBook ? 'active-tab' : 'text-gray-400 hover:text-gray-600'}`;
+        document.getElementById('tab-manage').className = `flex-1 py-4 font-bold transition-all ${!isBook ? 'active-tab' : 'text-gray-400 hover:text-gray-600'}`;
       }
 
       function filterOrdersByStatus() {
@@ -213,7 +202,6 @@
       document.getElementById('flight-search-form').addEventListener('submit', async function(e) {
         e.preventDefault();
 
-        // Validation: Prevent searching for same origin/destination
         const origin = document.getElementById('origin_airport').value;
         const dest = document.getElementById('destination_airport').value;
         if (origin === dest) {
@@ -223,7 +211,7 @@
 
         const resultsDiv = document.getElementById('search-results');
         resultsDiv.classList.remove('hidden');
-        resultsDiv.innerHTML = '<p style="text-align: center; color: #64748b;">Searching for the best flights...</p>';
+        resultsDiv.innerHTML = '<div class="text-center py-6 text-gray-400">Searching for the best flights...</div>';
 
         try {
           const response = await fetch('/search_flights', {
@@ -233,28 +221,28 @@
           const data = await response.json();
 
           if (data.flights && data.flights.length > 0) {
-            let html = '<h3 style="margin-bottom: 1rem;">Available Flights</h3>';
+            let html = '<h3 class="text-xl font-bold mb-6 text-[#0B253A]">Available Flights</h3><div class="grid gap-4">';
             data.flights.forEach(f => {
               html += `
-                <div style="background: #fff; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; transition: transform 0.2s hover; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <div class="p-6 border border-gray-100 rounded-xl flex flex-col md:flex-row justify-between items-center bg-white shadow-sm hover:shadow-md transition-all">
                   <div>
-                    <p style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0;">${f.origin_airport} → ${f.destination_airport}</p>
-                    <p style="color: #64748b; font-size: 0.9rem; margin-top: 4px;">${f.departure_datetime}</p>
+                    <p class="text-xl font-bold text-[#0B253A]">${f.origin_airport} → ${f.destination_airport}</p>
+                    <p class="text-sm text-gray-500 mt-1">${f.departure_datetime}</p>
                   </div>
-                  <div style="text-align: right;">
-                    <p style="font-weight: 600; color: #059669; font-size: 1.1rem; margin-bottom: 8px;">From $${f.economy_seat_price}</p>
-                    <button class="btn btn-primary btn-sm" onclick="location.href='/select_seat?flight_id=${f.flight_id}'">Select Seat</button>
+                  <div class="text-right mt-4 md:mt-0">
+                    <p class="text-lg font-bold text-[#007B8F] mb-2">From $${f.economy_seat_price}</p>
+                    <button onclick="location.href='/select_seat?flight_id=${f.flight_id}'" class="bg-[#007B8F] text-white px-8 py-2.5 rounded-lg font-bold hover:bg-[#006677]">Select Seat</button>
                   </div>
                 </div>`;
             });
-            resultsDiv.innerHTML = html;
+            resultsDiv.innerHTML = html + '</div>';
           } else {
-            resultsDiv.innerHTML = '<div style="padding: 2rem; border: 2px dashed #e2e8f0; border-radius: 12px; text-align: center; color: #94a3b8;">No flights found for these dates.</div>';
+            resultsDiv.innerHTML = '<div class="text-center py-12 border-2 border-dashed rounded-xl text-gray-400">No flights found for these dates.</div>';
           }
         } catch (error) {
-          resultsDiv.innerHTML = '<div class="alert alert-error">Something went wrong. Please try again.</div>';
+          resultsDiv.innerHTML = '<div class="p-4 bg-red-50 text-red-600 rounded-lg text-center">Something went wrong. Please try again.</div>';
         }
       });
     </script>
-  </body>
+</body>
 </html>
