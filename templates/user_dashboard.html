@@ -87,6 +87,79 @@
             </form>
 
             <div id="search-results" class="mt-12 hidden"></div>
+
+            {% if active_flights %}
+            <div id="all-future-flights" class="mt-12">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold text-[#0B253A]">Available Upcoming Flights</h2>
+                    <p class="text-sm text-gray-500">
+                        Showing page {{ active_flights.page }} of {{ active_flights.total_pages or 1 }}
+                    </p>
+                </div>
+
+                {% if active_flights.flights %}
+                <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                    <table class="min-w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th>Flight ID</th>
+                                <th>Route</th>
+                                <th>Departure</th>
+                                <th>Arrival</th>
+                                <th>Economy Price</th>
+                                <th>Business Price</th>
+                                <th>Plane</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in active_flights.flights %}
+                            <tr>
+                                <td>#{{ f.flight_id }}</td>
+                                <td>{{ f.origin_airport }} → {{ f.destination_airport }}</td>
+                                <td>{{ f.departure_datetime }}</td>
+                                <td>{{ f.arrival_datetime }}</td>
+                                <td>${{ f.economy_seat_price }}</td>
+                                <td>${{ f.business_seat_price }}</td>
+                                <td>{{ f.plane_id }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex items-center justify-between mt-4">
+                    <div>
+                        <span class="text-sm text-gray-500">
+                            Total flights: {{ active_flights.total }}
+                        </span>
+                    </div>
+                    <div class="flex gap-2">
+                        {% if active_flights.page > 1 %}
+                        <a href="{{ url_for('user_dashboard', page=active_flights.page - 1) }}"
+                           class="btn btn-secondary btn-sm">
+                            Previous
+                        </a>
+                        {% else %}
+                        <button class="btn btn-secondary btn-sm opacity-50 cursor-not-allowed" disabled>Previous</button>
+                        {% endif %}
+
+                        {% if active_flights.total_pages and active_flights.page < active_flights.total_pages %}
+                        <a href="{{ url_for('user_dashboard', page=active_flights.page + 1) }}"
+                           class="btn btn-primary btn-sm">
+                            Next
+                        </a>
+                        {% else %}
+                        <button class="btn btn-primary btn-sm opacity-50 cursor-not-allowed" disabled>Next</button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="mt-6 text-center py-10 border-2 border-dashed rounded-2xl border-gray-200 text-gray-400">
+                    No upcoming flights with available seats were found.
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
         </section>
 
         <section id="section-manage" class="card p-8 max-w-5xl mx-auto hidden">

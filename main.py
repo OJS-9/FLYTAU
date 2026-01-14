@@ -213,6 +213,18 @@ def user_dashboard():
     if session.get("user_type") != "customer":
         return redirect("/login")
     
+    # Pagination for list of all future flights with available seats
+    try:
+        page = int(request.args.get("page", 1))
+        if page < 1:
+            page = 1
+    except (TypeError, ValueError):
+        page = 1
+
+    # Fetch paginated future flights (only those with at least 1 available seat)
+    # Currently configured for 5 flights per page
+    active_flights = get_all_future_flights(page=page, per_page=5)
+
     # Update active orders to completed before fetching order history
     update_active_orders_to_completed()
     airports = get_all_airports()
@@ -225,7 +237,8 @@ def user_dashboard():
         user_name=session.get("user_name"),
         user_email=user_email,
         order_history=order_history,
-        airports=airports
+        airports=airports,
+        active_flights=active_flights
     )
 
 
