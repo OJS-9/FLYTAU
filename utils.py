@@ -960,16 +960,21 @@ def get_aircraft_activity_report():
                 "route": row[5]
             })
         return data
+
+
 def process_system_cancellation(flight_id):
-    # כאן אנחנו משתמשים ב-with על הפונקציה שלך שמחזירה cursor
+    """
+    Handles the cancellation of a flight by the system.
+    Updates flight/order statuses and removes staff assignments.
+    """
     with get_db_connection() as cursor:
         try:
-            # 1. עדכון הטיסה ללא פעילה
-            # (וודא שהרצת ALTER TABLE flight ADD COLUMN is_active TINYINT(1) DEFAULT 1;)
+            # 1. Update the flight to inactive
+            # Ensure 'is_active' column exists in 'flight' table
             print(f"DEBUG: Setting flight {flight_id} as inactive")
             cursor.execute("UPDATE flight SET is_active = 0 WHERE ID = %s", (flight_id,))
 
-            # 2. עדכון סטטוס ההזמנות
+            # 2. Update order statuses to 'System Cancelation' and reset prices
             print(f"DEBUG: Updating orders status for flight {flight_id}")
             cursor.execute("""
                 UPDATE `Order` 
@@ -977,15 +982,23 @@ def process_system_cancellation(flight_id):
                 WHERE Flight_ID = %s
             """, (flight_id,))
 
-            # אין צורך ב-commit() כי הגדרת autocommit=True בפונקציית החיבור!
+            # 3. Remove Staff Assignments (Stewards and Pilots)
+            # This frees up the staff for other potential assignments
+            print(f"DEBUG: Removing staff assignments for flight {flight_id}")
 
-            print("DEBUG: Success! Changes saved automatically via autocommit.")
+            # Remove Stewards
+            cursor.execute("DELETE FROM steward_works_flight WHERE Flight_ID = %s", (flight_id,))
+
+            # Remove Pilots
+            cursor.execute("DELETE FROM pilot_works_flight WHERE Flight_ID = %s", (flight_id,))
+
+            # No manual commit() needed if autocommit=True is configured in the connection
+            print("DEBUG: Success! Flight canceled and staff released.")
             return True
 
         except Exception as e:
             print(f"CRITICAL ERROR in process_system_cancellation: {e}")
             return False
-
 
 def get_all_airports():
     """שליפת שדות תעופה לפי מיקום הטור כדי לעקוף שמות עם רווחים"""
