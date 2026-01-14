@@ -682,10 +682,21 @@ def get_available_resources(origin, dest, departure_time):
     global_buffer = 72
 
     with get_db_connection() as cursor:
-        # --- 1. PLANES QUERY (Updated to include Model and Size) ---
+        # --- 1. PLANES QUERY (Updated with Size-Duration Logic) ---
+        # Logic: If flight duration > 6 hours, show only 'Large' planes.
+        # Otherwise, show both 'Small' and 'Large' planes.
+
         query_planes = """
             SELECT p.ID, p.Size FROM plane p
-            WHERE p.ID NOT IN (
+            WHERE (
+                -- Plane size logic based on route duration
+                CASE 
+                    WHEN (SELECT Duration FROM path WHERE Origin_Airport = %s AND Dest_Airport = %s LIMIT 1) > 6 
+                    THEN p.Size = 'Large'
+                    ELSE TRUE
+                END
+            )
+            AND p.ID NOT IN (
                 -- Plane cannot be in flight during the selected departure
                 SELECT Plane_ID FROM flight 
                 WHERE (Departure_DateTime <= %s AND Arrival_DateTime >= %s)
@@ -706,8 +717,19 @@ def get_available_resources(origin, dest, departure_time):
                 )
             )
         """
-        cursor.execute(query_planes,
-                       (departure_time, departure_time, departure_time, global_buffer, departure_time, origin))
+
+        # Arguments:
+        # 1. origin (for duration), 2. destination (for duration),
+        # 3. departure_time, 4. departure_time (for overlap check),
+        # 5. departure_time, 6. global_buffer (for idle check),
+        # 7. departure_time, 8. origin (for location check)
+
+        cursor.execute(query_planes, (
+            origin, dest,
+            departure_time, departure_time,
+            departure_time, global_buffer,
+            departure_time, origin
+        ))
         resources['planes'] = cursor.fetchall()
 
         # --- 2. PILOTS QUERY (Fixed location-locking logic) ---
