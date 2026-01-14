@@ -2,112 +2,125 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Manage Booking - FLYTAU</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservation Details - FLYTAU</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; color: #1E293B; }
+        .card { background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #E2E8F0; }
+        .status-badge { @apply px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest border; }
+    </style>
 </head>
-<body>
-    <main class="container">
-        <nav class="flight-nav">
-            <a href="#" class="flight-nav-item active">My Booking Details</a>
+<body class="min-h-screen py-12 px-4">
+    <main class="max-w-3xl mx-auto">
 
-            {% if session.get('user_type') == 'guest' %}
-                <a href="{{ url_for('guest_dashboard') }}" class="flight-nav-item">Return to Dashboard</a>
-            {% elif session.get('user_type') == 'customer' %}
-                <a href="{{ url_for('user_dashboard') }}" class="flight-nav-item">Return to Dashboard</a>
-            {% else %}
-                <a href="/" class="flight-nav-item">Return Home</a>
-            {% endif %}
-        </nav>
+        <div class="mb-6">
+            {% set back_url = url_for('guest_dashboard') if session.get('user_type') == 'guest' else url_for('user_dashboard') %}
+            <a href="{{ back_url }}" class="inline-flex items-center text-gray-500 hover:text-[#007B8F] transition-colors font-medium">
+                <span class="material-icons mr-2">arrow_back</span>
+                Return to Dashboard
+            </a>
+        </div>
 
-        <section class="card mt-xl m-auto" style="max-width: 700px;">
-
-            {% with messages = get_flashed_messages() %}
-                {% if messages %}
-                    {% for message in messages %}
-                    <div style="background-color: #fef2f2; border: 1px solid #ef4444; color: #b91c1c; padding: 15px; text-align: center; border-radius: 8px; margin: 10px;">
-                        <strong>Error:</strong> {{ message }}
-                    </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-
-            {% if error_message %}
-            <div style="background-color: #fef2f2; border: 1px solid #ef4444; color: #b91c1c; padding: 15px; text-align: center; border-radius: 8px; margin: 10px;">
-                <strong>Error:</strong> {{ error_message }}
+        {% if error_message or get_flashed_messages() %}
+        <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded shadow-sm">
+            <div class="flex items-center">
+                <span class="material-icons mr-2">error</span>
+                <span class="font-bold">Cancellation Error:</span>
             </div>
-            {% endif %}
+            <p class="mt-1 ml-8 text-sm">
+                {{ error_message if error_message else get_flashed_messages()[0] }}
+            </p>
+        </div>
+        {% endif %}
 
+        <div class="card overflow-hidden">
             {% if order.Status == 'Costumer Cancelation' %}
-            <div style="background-color: #fee2e2; border-bottom: 2px solid #ef4444; color: #b91c1c; padding: 20px; text-align: center; font-weight: bold; border-radius: 12px 12px 0 0;">
-                ATTENTION: THIS RESERVATION IS CANCELLED
-                <div style="font-size: 1rem; font-weight: normal; margin-top: 5px;">
-                    Cancellation Fee Charged: <strong>${{ "%.2f"|format(order.Total_Price) }}</strong> (5%)
+            <div class="bg-red-500 text-white px-8 py-4 flex items-center justify-between">
+                <div class="flex items-center">
+                    <span class="material-icons mr-3">cancel</span>
+                    <div>
+                        <p class="font-bold uppercase tracking-wider">Reservation Cancelled</p>
+                        <p class="text-xs opacity-90">Penalty Fee Applied: ${{ "%.2f"|format(order.Total_Price) }}</p>
+                    </div>
                 </div>
+                <span class="text-xs font-bold border border-white/40 px-3 py-1 rounded">5% FEE CHARGED</span>
             </div>
             {% endif %}
 
-            <div class="card-header border-bottom">
-                <h1 class="card-title">Reservation Summary</h1>
-                <p class="text-muted">Booking Reference: <strong>#{{ order.Ticket_ID }}</strong></p>
-                <p class="small">Status: <span class="{% if order.Status == 'Costumer Cancelation' %}text-error{% else %}text-success{% endif %}">{{ order.Status }}</span></p>
-            </div>
-
-            <div class="card-body">
-                <div class="booking-details-container {% if order.Status == 'Costumer Cancelation' %}opacity-reduced{% endif %}" style="background: var(--color-background); border: 1px solid #eef2f6; border-radius: 12px; padding: 24px;">
-
-                    <div style="margin-bottom: 20px;">
-                        <label class="text-muted small" style="text-transform: uppercase; letter-spacing: 1px;">Passenger Account</label>
-                        <div class="h3" style="margin-top: 5px;">{{ order.Passenger_Email }}</div>
+            <div class="p-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                    <div>
+                        <h1 class="text-3xl font-bold text-[#0B253A]">Reservation Summary</h1>
+                        <p class="text-gray-400 text-sm mt-1">Booking ID: <span class="font-mono font-bold">#{{ order.Ticket_ID }}</span></p>
                     </div>
 
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                        <div>
-                            <span class="text-muted small">FROM</span>
-                            <div class="h2" style="color: var(--color-primary); margin: 0;">{{ order.Origin }}</div>
+                    <span class="status-badge {% if order.Status == 'Active' %} bg-blue-50 text-blue-600 border-blue-100 {% else %} bg-gray-50 text-gray-500 border-gray-200 {% endif %}">
+                        {{ order.Status }}
+                    </span>
+                </div>
+
+                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100 mb-8">
+                    <div class="mb-6">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Passenger Account</label>
+                        <p class="text-lg font-semibold text-[#0B253A]">{{ order.Passenger_Email }}</p>
+                    </div>
+
+                    <div class="flex items-center justify-between bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <div class="text-center md:text-left">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Origin</label>
+                            <span class="text-2xl font-black text-[#007B8F]">{{ order.Origin }}</span>
                         </div>
 
-                        <div style="text-align: center; flex-grow: 1; padding: 0 20px;">
-                            <div style="border-top: 2px dashed #cbd5e1; width: 100%;"></div>
+                        <div class="flex-grow mx-8 flex flex-col items-center">
+                            <span class="material-icons text-gray-200">flight_takeoff</span>
+                            <div class="w-full border-t-2 border-dashed border-gray-100 mt-2"></div>
                         </div>
 
-                        <div style="text-align: right;">
-                            <span class="text-muted small">TO</span>
-                            <div class="h2" style="color: var(--color-primary); margin: 0;">{{ order.Destination }}</div>
+                        <div class="text-center md:text-right">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Destination</label>
+                            <span class="text-2xl font-black text-[#007B8F]">{{ order.Destination }}</span>
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eef2f6;">
-                        <div>
-                            <span class="text-muted small">DEPARTURE</span>
-                            <div style="font-weight: 600;">{{ order.Departure_Time }}</div>
+                    <div class="grid grid-cols-2 gap-4 mt-6">
+                        <div class="bg-white/60 p-4 rounded-xl">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Departure Time</label>
+                            <span class="font-bold text-[#0B253A]">{{ order.Departure_Time }}</span>
                         </div>
-                        <div style="text-align: right;">
-                            <span class="text-muted small">SEAT</span>
-                            <div style="font-weight: 600; color: var(--color-primary);">{{ 'Released' if order.Status == 'Costumer Cancelation' else order.Seat_ID }}</div>
+                        <div class="bg-white/60 p-4 rounded-xl text-right">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Seat Assignment</label>
+                            <span class="font-bold text-[#007B8F]">
+                                {{ 'N/A (Released)' if order.Status == 'Costumer Cancelation' else order.Seat_ID }}
+                            </span>
                         </div>
                     </div>
                 </div>
 
-                <div style="margin-top: 30px; display: flex; gap: 15px;">
-                    {% if order.Status == 'Costumer Cancelation' %}
-                        <button disabled class="btn btn-secondary" style="flex: 2; cursor: not-allowed; opacity: 0.5;">Reservation Cancelled</button>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    {% if order.Status == 'Active' %}
+                    <form action="{{ url_for('cancel_order_route') }}" method="POST" class="flex-grow" onsubmit="return confirm('Confirm cancellation? A 5% fee will be charged and this action cannot be undone.');">
+                        <input type="hidden" name="order_id" value="{{ order.Ticket_ID }}">
+                        <button type="submit" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-100 transition-all flex items-center justify-center gap-2">
+                            <span class="material-icons">cancel</span>
+                            Cancel Reservation
+                        </button>
+                    </form>
                     {% else %}
-                        <form action="{{ url_for('cancel_order_route') }}" method="POST" style="flex: 2;" onsubmit="return confirm('Confirm cancellation? 5% fee applies and 36h limit check will be performed.');">
-                            <input type="hidden" name="order_id" value="{{ order.Ticket_ID }}">
-                            <button type="submit" class="btn btn-danger w-100" style="padding: 12px; background-color: #dc3545; border-color: #dc3545; color: white;">Cancel Reservation</button>
-                        </form>
-                    {% endif %}
-
-                    {% if session.get('user_type') == 'guest' %}
-                        <a href="{{ url_for('guest_dashboard') }}" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;">Back</a>
-                    {% elif session.get('user_type') == 'customer' %}
-                        <a href="{{ url_for('user_dashboard') }}" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;">Back</a>
-                    {% else %}
-                        <a href="/" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;">Back</a>
+                    <div class="flex-grow p-4 bg-gray-100 text-gray-400 font-bold text-center rounded-xl border border-gray-200">
+                        This reservation is no longer active
+                    </div>
                     {% endif %}
                 </div>
             </div>
-        </section>
+        </div>
+
+        <p class="text-center text-gray-400 text-xs mt-8 italic">
+            Note: Cancellations are subject to FlyTau's terms and conditions. Processing fees are non-refundable.
+        </p>
     </main>
 </body>
 </html>
