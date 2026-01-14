@@ -664,7 +664,7 @@ def update_active_orders_to_completed() -> int:
                     if current_datetime > departure_datetime:
                         cursor.execute(
                             "UPDATE `Order` SET Status = 'Completed' WHERE Order_ID = %s",
-                            (order_id)
+                            (order_id,)
                         )
             
         except Exception as e:
