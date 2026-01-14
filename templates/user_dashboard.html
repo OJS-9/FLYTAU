@@ -109,6 +109,7 @@
                                 <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Economy Price</th>
                                 <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Business Price</th>
                                 <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Plane</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -121,6 +122,15 @@
                                 <td class="px-4 py-3 text-gray-900 font-semibold">${{ f.economy_seat_price }}</td>
                                 <td class="px-4 py-3 text-gray-900 font-semibold">${{ f.business_seat_price }}</td>
                                 <td class="px-4 py-3 text-gray-700">{{ f.plane_id }}</td>
+                                <td class="px-4 py-3">
+                                    <button type="button" 
+                                            class="quick-search-btn bg-[#007B8F] text-white font-semibold py-1.5 px-4 rounded-lg hover:bg-[#006677] transition-all text-xs whitespace-nowrap"
+                                            data-origin="{{ f.origin_airport }}"
+                                            data-destination="{{ f.destination_airport }}"
+                                            data-date="{{ f.departure_datetime }}">
+                                        Quick Search
+                                    </button>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -270,6 +280,37 @@
       document.addEventListener('DOMContentLoaded', function() {
         const filterSelect = document.getElementById('status-filter');
         if (filterSelect) filterSelect.addEventListener('change', filterOrdersByStatus);
+
+        // Quick search button functionality
+        document.querySelectorAll('.quick-search-btn').forEach(button => {
+          button.addEventListener('click', function() {
+            const origin = this.getAttribute('data-origin');
+            const destination = this.getAttribute('data-destination');
+            const dateTime = this.getAttribute('data-date');
+            
+            // Extract date from datetime string (format: "YYYY-MM-DD HH:MM:SS" -> "YYYY-MM-DD")
+            const date = dateTime ? dateTime.split(' ')[0] : '';
+            
+            // Populate form fields
+            const originSelect = document.getElementById('origin_airport');
+            const destSelect = document.getElementById('destination_airport');
+            const dateInput = document.getElementById('departure_date');
+            
+            if (originSelect && origin) {
+              originSelect.value = origin;
+            }
+            if (destSelect && destination) {
+              destSelect.value = destination;
+            }
+            if (dateInput && date) {
+              dateInput.value = date;
+            }
+            
+            // Scroll to form and ensure "Book A Flight" tab is active
+            showTab('book');
+            document.getElementById('section-book').scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+        });
       });
 
       document.getElementById('flight-search-form').addEventListener('submit', async function(e) {
