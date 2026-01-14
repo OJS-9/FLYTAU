@@ -41,7 +41,10 @@
             </div>
 
             <div class="p-8">
-                <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-4">Operational Management</p>
+                <div class="relative mb-4">
+                    <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-100"></div></div>
+                    <div class="relative flex justify-center text-xs uppercase"><span class="bg-white px-3 text-gray-400 font-bold tracking-widest">Operational Management</span></div>
+                </div>
                 <div class="grid gap-3">
                     <a href="{{ url_for('manage_orders_page') }}" class="admin-btn">
                         <span class="material-icons">confirmation_number</span>
