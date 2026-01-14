@@ -2,74 +2,125 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Step 3: Flight Pricing - FLYTAU</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step 4: Ticket Pricing - FLYTAU</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+
     <style>
-        .currency-input {
-            position: relative;
-            display: flex;
-            align-items: center;
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; color: #1E293B; }
+        .card { background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #E2E8F0; }
+
+        /* Stepper Styles */
+        .step-dot { @apply w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all; }
+        .step-active { @apply bg-[#007B8F] text-white shadow-lg shadow-[#007B8F]/30; }
+        .step-completed { @apply bg-green-500 text-white; }
+
+        .price-input-wrapper {
+            @apply relative flex items-center;
         }
-        .currency-input span {
-            position: absolute;
-            left: var(--spacing-md);
-            font-weight: var(--font-weight-bold);
-            color: var(--color-text-secondary);
-            z-index: 1;
+        .price-input-wrapper span {
+            @apply absolute left-4 font-bold text-[#007B8F] pointer-events-none;
         }
-        .currency-input input {
-            width: 100%;
-            padding-left: calc(var(--spacing-md) * 2 + 10px);
+        .price-input-wrapper input {
+            @apply w-full pl-8 pr-4 py-4 bg-white border border-gray-200 rounded-xl outline-none transition-all focus:ring-2 focus:ring-[#007B8F] focus:border-transparent font-semibold;
         }
     </style>
 </head>
-<body>
-    <main class="container">
-        <section class="card mt-xl m-auto" style="max-width: 500px;">
-            <div class="card-header text-center">
-                <h1 class="card-title">Step 3: Ticket Pricing</h1>
+<body class="min-h-screen py-12 px-4">
+    <main class="max-w-2xl mx-auto">
+
+        <div class="flex items-center justify-center mb-10 gap-4">
+            <div class="flex flex-col items-center">
+                <div class="step-dot step-completed"><span class="material-icons text-sm">check</span></div>
+                <span class="text-[10px] uppercase font-bold mt-2 text-green-500">Route</span>
+            </div>
+            <div class="w-10 h-px bg-green-200 -mt-4"></div>
+            <div class="flex flex-col items-center">
+                <div class="step-dot step-completed"><span class="material-icons text-sm">check</span></div>
+                <span class="text-[10px] uppercase font-bold mt-2 text-green-500">Aircraft</span>
+            </div>
+            <div class="w-10 h-px bg-green-200 -mt-4"></div>
+            <div class="flex flex-col items-center">
+                <div class="step-dot step-active">3</div>
+                <span class="text-[10px] uppercase font-bold mt-2 text-[#007B8F]">Pricing</span>
+            </div>
+            <div class="w-10 h-px bg-gray-200 -mt-4"></div>
+            <div class="flex flex-col items-center">
+                <div class="step-dot text-gray-400 bg-gray-100">4</div>
+                <span class="text-[10px] uppercase font-bold mt-2 text-gray-400">Crew</span>
+            </div>
+        </div>
+
+        <section class="card overflow-hidden">
+            <div class="bg-[#0B253A] p-8 text-center text-white">
+                <h1 class="text-2xl font-bold">Ticket Pricing</h1>
+                <p class="text-blue-100/70 text-sm mt-2">Set the base fares for this specific flight configuration.</p>
             </div>
 
-            <div class="card-body">
-                <p class="text-muted text-center mb-lg">
-                    Define seat prices for the route <strong>{{ origin }} ➔ {{ dest }}</strong>
-                    using Aircraft <strong>#{{ plane_id }}</strong>.
-                </p>
+            <div class="p-8">
+                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="text-center md:text-left">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Assigned Route</span>
+                        <p class="font-bold text-[#0B253A] flex items-center">
+                            {{ origin }} <span class="material-icons text-sm mx-2 text-[#007B8F]">trending_flat</span> {{ dest }}
+                        </p>
+                    </div>
+                    <div class="text-center md:text-right">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Aircraft ID</span>
+                        <p class="font-bold text-[#0B253A]">#{{ plane_id }} ({{ plane_size }})</p>
+                    </div>
+                </div>
 
-                <form action="/get_available_crew" method="POST">
+                <form action="/get_available_crew" method="POST" class="space-y-6">
                     <input type="hidden" name="origin" value="{{ origin }}">
                     <input type="hidden" name="dest" value="{{ dest }}">
                     <input type="hidden" name="departure_time" value="{{ departure_time }}">
                     <input type="hidden" name="plane_id" value="{{ plane_id }}">
                     <input type="hidden" name="plane_size" value="{{ plane_size }}">
 
-                    <div class="card" style="background-color: var(--color-gray-50);">
-                        <div class="card-body">
-                            <div class="form-group">
-                                <label>Economy Class Price</label>
-                                <div class="currency-input">
-                                    <span>$</span>
-                                    <input type="number" name="economy_price" min="1" placeholder="Enter amount" required>
-                                </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="p-6 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                            <label class="block text-xs font-bold text-[#0B253A] uppercase tracking-widest mb-3 flex items-center">
+                                <span class="material-icons text-sm mr-2 text-blue-500">weekend</span>
+                                Economy Class
+                            </label>
+                            <div class="price-input-wrapper">
+                                <span>$</span>
+                                <input type="number" name="economy_price" min="1" placeholder="0.00" required>
                             </div>
+                        </div>
 
-                            <div class="form-group">
-                                <label>Business Class Price</label>
-                                <div class="currency-input">
-                                    <span>$</span>
-                                    <input type="number" name="business_price" min="1" placeholder="Enter amount" required>
-                                </div>
+                        <div class="p-6 bg-purple-50/50 rounded-2xl border border-purple-100/50">
+                            <label class="block text-xs font-bold text-[#0B253A] uppercase tracking-widest mb-3 flex items-center">
+                                <span class="material-icons text-sm mr-2 text-purple-500">stars</span>
+                                Business Class
+                            </label>
+                            <div class="price-input-wrapper">
+                                <span>$</span>
+                                <input type="number" name="business_price" min="1" placeholder="0.00" required>
                             </div>
                         </div>
                     </div>
 
-                    <div class="flex gap-md mt-lg">
-                        <button type="submit" class="btn btn-primary" style="flex: 2;">Next: Assign Crew</button>
-                        <a href="{{ url_for('manage_flights') }}" class="btn btn-ghost" style="flex: 1; text-align: center;">Cancel</a>
+                    <div class="flex flex-col sm:flex-row gap-3 pt-6">
+                        <button type="submit" class="flex-[2] bg-[#007B8F] hover:bg-[#006677] text-white font-bold py-4 rounded-xl shadow-lg shadow-[#007B8F]/20 transition-all flex items-center justify-center gap-2 group">
+                            Next: Assign Crew
+                            <span class="material-icons transform group-hover:translate-x-1 transition-transform">groups</span>
+                        </button>
+
+                        <a href="{{ url_for('manage_flights') }}" class="flex-[1] bg-gray-50 hover:bg-gray-100 text-gray-500 font-bold py-4 rounded-xl text-center transition-all border border-gray-100">
+                            Cancel
+                        </a>
                     </div>
                 </form>
             </div>
         </section>
+
+        <p class="text-center text-gray-400 text-[10px] mt-8 uppercase tracking-[0.2em]">
+            Step 3 of 4 • Financial Configuration
+        </p>
     </main>
 </body>
 </html>

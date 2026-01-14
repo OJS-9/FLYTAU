@@ -1,40 +1,94 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - FLYTAU</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-  </head>
-  <body>
-    <main class="container">
-      <section class="card mt-xl m-auto" style="max-width: 480px;">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
 
-        <div class="card-header text-center">
-          <h1 class="card-title">Welcome, {{ user_name or 'Manager' }}!</h1>
-          <p class="text-muted mb-sm">
-            Employee ID: {{ user_id }}
-          </p>
-          <p class="font-weight-medium">
-            Select your action:
-          </p>
-        </div>
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; color: #1E293B; }
+        .card { background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #E2E8F0; }
+        .admin-btn {
+            @apply flex items-center p-4 bg-white border border-gray-200 rounded-xl transition-all duration-200 text-[#0B253A] font-bold;
+        }
+        .admin-btn:hover {
+            @apply border-[#007B8F] bg-gray-50 -translate-y-1 shadow-md text-[#007B8F];
+        }
+        .admin-btn span.material-icons { @apply mr-3 text-[#007B8F]; }
 
-        <div class="card-body">
-          <div class="flex flex-column gap-md">
-            <a href="{{ url_for('manage_orders_page') }}" class="btn btn-primary w-full">Manage Orders</a>
-            <a href="{{ url_for('manage_flights') }}" class="btn btn-primary w-full">Manage Flights</a>
-            <a href="{{ url_for('view_reports') }}" class="btn btn-primary w-full">View Management Reports</a>
-            <hr class="my-sm" style="border: 0; border-top: 1px solid #e5e7eb;">
-            <a href="{{ url_for('add_plane') }}" class="btn btn-primary w-full">Add a new plane</a>
-            <a href="{{ url_for('add_pilot_page') }}" class="btn btn-primary w-full">Add a pilot to FLYTAU crew</a>
-            <a href="{{ url_for('add_steward') }}" class="btn btn-primary w-full">Add a steward to FLYTAU crew</a>
-          </div>
-        </div>
+        .admin-btn-secondary {
+            @apply flex items-center p-3 bg-gray-50 border border-transparent rounded-lg transition-all text-sm font-semibold text-gray-600;
+        }
+        .admin-btn-secondary:hover { @apply bg-white border-gray-200 shadow-sm text-[#0B253A]; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center py-12 px-4">
+    <main class="w-full max-w-lg">
+        <section class="card overflow-hidden">
 
-        <div class="card-footer text-center">
-          <a href="{{ url_for('logout') }}" class="btn btn-ghost btn-sm text-error">Log Out</a>
-        </div>
+            <div class="bg-[#0B253A] p-8 text-center text-white relative">
+                <div class="absolute top-4 right-6 opacity-20">
+                    <span class="material-icons text-5xl">admin_panel_settings</span>
+                </div>
+                <h1 class="text-2xl font-bold">Welcome, {{ user_name or 'Manager' }}!</h1>
+                <div class="flex items-center justify-center mt-2 opacity-80 text-xs tracking-widest uppercase">
+                    <span class="material-icons text-sm mr-1">badge</span>
+                    Employee ID: {{ user_id }}
+                </div>
+            </div>
 
-      </section>
+            <div class="p-8">
+                <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-4">Operational Management</p>
+                <div class="grid gap-3">
+                    <a href="{{ url_for('manage_orders_page') }}" class="admin-btn">
+                        <span class="material-icons">confirmation_number</span>
+                        Manage Orders
+                    </a>
+                    <a href="{{ url_for('manage_flights') }}" class="admin-btn">
+                        <span class="material-icons">flight_takeoff</span>
+                        Manage Flights
+                    </a>
+                    <a href="{{ url_for('view_reports') }}" class="admin-btn">
+                        <span class="material-icons">insert_chart</span>
+                        View Management Reports
+                    </a>
+                </div>
+
+                <div class="relative my-8">
+                    <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-100"></div></div>
+                    <div class="relative flex justify-center text-xs uppercase"><span class="bg-white px-3 text-gray-400 font-bold tracking-tighter">Fleet & Crew Resources</span></div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-2">
+                    <a href="{{ url_for('add_plane') }}" class="admin-btn-secondary">
+                        <span class="material-icons text-sm mr-2">add_circle_outline</span>
+                        Add a New Plane
+                    </a>
+                    <a href="{{ url_for('add_pilot_page') }}" class="admin-btn-secondary">
+                        <span class="material-icons text-sm mr-2">person_add</span>
+                        Add a Pilot to FLYTAU Crew
+                    </a>
+                    <a href="{{ url_for('add_steward') }}" class="admin-btn-secondary">
+                        <span class="material-icons text-sm mr-2">groups</span>
+                        Add a Steward to FLYTAU Crew
+                    </a>
+                </div>
+            </div>
+
+            <div class="p-6 bg-gray-50/50 border-t border-gray-100 flex justify-center">
+                <a href="{{ url_for('logout') }}" class="inline-flex items-center text-red-500 hover:text-red-700 font-bold text-sm transition-colors group">
+                    <span class="material-icons mr-1 text-sm group-hover:rotate-180 transition-transform duration-300">logout</span>
+                    Log Out of Secure Session
+                </a>
+            </div>
+        </section>
+
+        <p class="text-center text-gray-400 text-[10px] mt-6 uppercase tracking-[0.2em]">
+            Authorized Personnel Only • Secure Admin Access
+        </p>
     </main>
-  </body>
+</body>
 </html>

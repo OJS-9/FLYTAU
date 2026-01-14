@@ -2,93 +2,119 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Flight Summary - FLYTAU</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Manifest Created - FLYTAU</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+
     <style>
-        .summary-section {
-            border-bottom: 1px solid var(--color-gray-200);
-            padding: var(--spacing-md) 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; color: #1E293B; }
+        .card { background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #E2E8F0; }
+
+        .summary-row {
+            @apply flex justify-between items-center py-4 border-b border-gray-50 last:border-0;
         }
-        .summary-section:last-of-type {
-            border-bottom: none;
+        .label { @apply text-[10px] font-bold text-gray-400 uppercase tracking-widest; }
+        .value { @apply font-bold text-[#0B253A]; }
+
+        .success-animation {
+            @apply w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4;
+            animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .summary-label {
-            color: var(--color-text-secondary);
-            font-weight: var(--font-weight-medium);
-        }
-        .summary-value {
-            color: var(--color-text-primary);
-            font-weight: var(--font-weight-bold);
-            text-align: right;
+
+        @keyframes scaleIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
-<body>
-    <main class="container">
-        <section class="card mt-xl m-auto" style="max-width: 600px;">
-            <div class="card-header text-center">
-                <h1 class="card-title">Flight Manifest Created</h1>
-                <p class="text-muted mb-sm">Flight ID: #{{ flight_id }}</p>
+<body class="min-h-screen py-12 px-4 flex items-center justify-center">
+    <main class="w-full max-w-2xl">
+
+        <section class="card overflow-hidden">
+            <div class="bg-[#0B253A] p-10 text-center text-white">
+                <div class="success-animation">
+                    <span class="material-icons text-4xl">check_circle</span>
+                </div>
+                <h1 class="text-3xl font-bold">Flight Manifest Created</h1>
+                <p class="text-blue-100/70 text-sm mt-2 font-mono uppercase tracking-tighter">Reference ID: #{{ flight_id }}</p>
             </div>
 
-            <div class="card-body">
-                <div class="summary-section">
-                    <span class="summary-label">Route:</span>
-                    <span class="summary-value text-primary" style="font-size: 1.2rem;">{{ origin }} ➔ {{ dest }}</span>
-                </div>
-                <div class="summary-section">
-                    <span class="summary-label">Departure:</span>
-                    <span class="summary-value">{{ departure_time }}</span>
-                </div>
-                <div class="summary-section">
-                    <span class="summary-label">Clock Duration:</span>
-                    <span class="summary-value">{{ duration }} Hours</span>
-                </div>
-                <div class="summary-section">
-                    <span class="summary-label">Aircraft ID:</span>
-                    <span class="summary-value">#{{ plane_id }}</span>
-                </div>
-
-                <div class="alert alert-success mt-lg">
-                    <div style="font-weight: bold; margin-bottom: var(--spacing-sm);">Ticket Pricing</div>
-                    <div class="flex justify-between mb-sm">
-                        <span>Economy Class:</span>
-                        <span style="font-weight: bold;">${{ economy_price }}</span>
+            <div class="p-8 md:p-12">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2 mb-8 bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                    <div class="summary-row">
+                        <span class="label">Route</span>
+                        <span class="value text-[#007B8F]">{{ origin }} ➔ {{ dest }}</span>
                     </div>
-                    <div class="flex justify-between">
-                        <span>Business Class:</span>
-                        <span style="font-weight: bold;">${{ business_price }}</span>
+                    <div class="summary-row">
+                        <span class="label">Duration</span>
+                        <span class="value">{{ duration }} Hours</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label">Departure</span>
+                        <span class="value text-sm">{{ departure_time }}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label">Aircraft</span>
+                        <span class="value">#{{ plane_id }}</span>
                     </div>
                 </div>
 
-                <div class="card mt-md" style="background-color: var(--color-gray-50);">
-                    <div class="card-header">
-                        <h3 class="card-title" style="font-size: var(--font-size-lg); margin-bottom: 0;">Assigned Crew</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-md">
-                            <strong>Pilots:</strong>
-                            <span class="text-muted">
-                                {% for p in pilots %}{{ p[0] }} {{ p[1] }}{% if not loop.last %}, {% endif %}{% endfor %}
-                            </span>
+                <div class="mb-10">
+                    <h3 class="label mb-4 text-[#007B8F]">Commercial Configuration</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-blue-50/50 border border-blue-100 p-4 rounded-xl text-center">
+                            <span class="block text-[10px] font-bold text-blue-400 uppercase mb-1">Economy</span>
+                            <span class="text-xl font-black text-[#0B253A]">${{ economy_price }}</span>
                         </div>
-                        <div>
-                            <strong>Attendants:</strong>
-                            <span class="text-muted">
-                                {% for s in stewards %}{{ s[0] }} {{ s[1] }}{% if not loop.last %}, {% endif %}{% endfor %}
-                            </span>
+                        <div class="bg-purple-50/50 border border-purple-100 p-4 rounded-xl text-center">
+                            <span class="block text-[10px] font-bold text-purple-400 uppercase mb-1">Business</span>
+                            <span class="text-xl font-black text-[#0B253A]">${{ business_price }}</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-lg">
-                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary w-full">Back to Dashboard</a>
+                <div class="border-t border-gray-100 pt-8 mb-10">
+                    <h3 class="label mb-4">Operational Crew</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <span class="material-icons text-gray-300 mr-3">person_pin</span>
+                            <div>
+                                <span class="block text-[11px] font-bold text-gray-500 uppercase">Assigned Pilots</span>
+                                <p class="text-sm font-medium text-[#0B253A]">
+                                    {% for p in pilots %}{{ p[0] }} {{ p[1] }}{% if not loop.last %}, {% endif %}{% endfor %}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="material-icons text-gray-300 mr-3">groups</span>
+                            <div>
+                                <span class="block text-[11px] font-bold text-gray-500 uppercase">Flight Attendants</span>
+                                <p class="text-sm font-medium text-[#0B253A]">
+                                    {% for s in stewards %}{{ s[0] }} {{ s[1] }}{% if not loop.last %}, {% endif %}{% endfor %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-4">
+                    <a href="{{ url_for('admin_dashboard') }}" class="w-full bg-[#007B8F] hover:bg-[#006677] text-white font-bold py-5 rounded-2xl shadow-xl shadow-[#007B8F]/20 transition-all flex items-center justify-center gap-2 group">
+                        <span class="material-icons">dashboard</span>
+                        Back to Dashboard
+                    </a>
+                    <button onclick="window.print()" class="text-gray-400 hover:text-gray-600 font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors">
+                        <span class="material-icons text-sm">print</span>
+                        Print Manifest
+                    </button>
                 </div>
             </div>
         </section>
+
+        <p class="text-center text-gray-400 text-[10px] mt-8 uppercase tracking-[0.3em]">
+            Official FLYTAU Flight Operations Record
+        </p>
     </main>
 </body>
 </html>

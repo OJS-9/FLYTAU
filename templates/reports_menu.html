@@ -2,42 +2,92 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Management Reports - FLYTAU</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; color: #1E293B; }
+        .card { background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #E2E8F0; }
+        .report-link {
+            @apply flex items-center justify-between p-5 bg-white border border-gray-100 rounded-xl transition-all duration-200;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .report-link:hover {
+            @apply border-[#007B8F] bg-gray-50 translate-x-1;
+            box-shadow: 0 4px 12px rgba(0, 123, 143, 0.08);
+        }
+    </style>
 </head>
-<body>
-    <main class="container">
-        <div class="mt-lg">
-            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-ghost">← Back to Dashboard</a>
+<body class="min-h-screen py-12 px-4">
+    <main class="max-w-2xl mx-auto">
+
+        <div class="mb-8">
+            <a href="{{ url_for('admin_dashboard') }}" class="inline-flex items-center text-gray-500 hover:text-[#007B8F] transition-colors font-semibold group">
+                <span class="material-icons mr-2 transform group-hover:-translate-x-1 transition-transform">arrow_back</span>
+                Back to Admin Dashboard
+            </a>
         </div>
 
-        <section class="card mt-md m-auto" style="max-width: 600px;">
-            <div class="card-header text-center">
-                <h2 class="card-title">Management Reports</h2>
-                <p class="text-muted">Select a report to view analytics and charts.</p>
+        <section class="card overflow-hidden">
+            <div class="bg-[#0B253A] p-8 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-[#007B8F]/20 rounded-full mb-4">
+                    <span class="material-icons text-[#007B8F] text-3xl">analytics</span>
+                </div>
+                <h2 class="text-2xl font-bold text-white">Management Reports</h2>
+                <p class="text-blue-100/70 text-sm mt-2">Select a report to view detailed analytics and performance charts.</p>
             </div>
 
-            <div class="card-body">
-                <div class="flex flex-column gap-md">
-                    <a href="{{ url_for('report_flight_occupancy') }}" class="btn btn-primary w-full text-left">
-                        1. Average Flight Occupancy
+            <div class="p-8">
+                <div class="grid gap-4">
+
+                    <a href="{{ url_for('report_flight_occupancy') }}" class="report-link group">
+                        <div class="flex items-center">
+                            <span class="w-10 h-10 flex items-center justify-center bg-gray-50 text-[#007B8F] rounded-lg font-bold mr-4 group-hover:bg-[#007B8F] group-hover:text-white transition-colors">1</span>
+                            <span class="font-bold text-[#0B253A]">Average Flight Occupancy</span>
+                        </div>
+                        <span class="material-icons text-gray-300 group-hover:text-[#007B8F]">chevron_right</span>
                     </a>
 
-                    <a href="{{ url_for('report_total_revenue') }}" class="btn btn-primary w-full text-left">
-                        2. Total Revenue Analysis
+                    <a href="{{ url_for('report_total_revenue') }}" class="report-link group">
+                        <div class="flex items-center">
+                            <span class="w-10 h-10 flex items-center justify-center bg-gray-50 text-[#007B8F] rounded-lg font-bold mr-4 group-hover:bg-[#007B8F] group-hover:text-white transition-colors">2</span>
+                            <span class="font-bold text-[#0B253A]">Total Revenue Analysis</span>
+                        </div>
+                        <span class="material-icons text-gray-300 group-hover:text-[#007B8F]">chevron_right</span>
                     </a>
 
-                    <a href="{{ url_for('report_employee_hours') }}" class="btn btn-primary w-full text-left">
-                        3. Employee Accumulated Flight Hours
+                    <a href="{{ url_for('report_employee_hours') }}" class="report-link group">
+                        <div class="flex items-center">
+                            <span class="w-10 h-10 flex items-center justify-center bg-gray-50 text-[#007B8F] rounded-lg font-bold mr-4 group-hover:bg-[#007B8F] group-hover:text-white transition-colors">3</span>
+                            <span class="font-bold text-[#0B253A]">Employee Flight Hours</span>
+                        </div>
+                        <span class="material-icons text-gray-300 group-hover:text-[#007B8F]">chevron_right</span>
                     </a>
 
-                    <a href="{{ url_for('report_cancellation_rate') }}" class="btn btn-primary w-full text-left">
-                        4. Cancellation Rate by Month
+                    <a href="{{ url_for('report_cancellation_rate') }}" class="report-link group">
+                        <div class="flex items-center">
+                            <span class="w-10 h-10 flex items-center justify-center bg-gray-50 text-[#007B8F] rounded-lg font-bold mr-4 group-hover:bg-[#007B8F] group-hover:text-white transition-colors">4</span>
+                            <span class="font-bold text-[#0B253A]">Cancellation Rate by Month</span>
+                        </div>
+                        <span class="material-icons text-gray-300 group-hover:text-[#007B8F]">chevron_right</span>
                     </a>
 
-                    <a href="{{ url_for('report_aircraft_activity') }}" class="btn btn-primary w-full text-left">
-                        5. Monthly Aircraft Activity Summary
+                    <a href="{{ url_for('report_aircraft_activity') }}" class="report-link group">
+                        <div class="flex items-center">
+                            <span class="w-10 h-10 flex items-center justify-center bg-gray-50 text-[#007B8F] rounded-lg font-bold mr-4 group-hover:bg-[#007B8F] group-hover:text-white transition-colors">5</span>
+                            <span class="font-bold text-[#0B253A]">Aircraft Activity Summary</span>
+                        </div>
+                        <span class="material-icons text-gray-300 group-hover:text-[#007B8F]">chevron_right</span>
                     </a>
+
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-gray-100 flex items-center justify-center text-gray-400">
+                    <span class="material-icons text-sm mr-2">lock</span>
+                    <span class="text-[10px] uppercase font-bold tracking-widest">Confidential Internal Data</span>
                 </div>
             </div>
         </section>

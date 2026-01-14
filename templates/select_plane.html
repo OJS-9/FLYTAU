@@ -2,81 +2,112 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Step 2: Select Aircraft - FLYTAU</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step 3: Select Aircraft - FLYTAU</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+
     <style>
-        .badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: bold;
-            display: inline-block;
-        }
-        .badge-large {
-            background-color: var(--color-primary-lighter);
-            color: var(--color-primary-darker);
-            border: 1px solid var(--color-primary-light);
-        }
-        .badge-small {
-            background-color: var(--color-success-light);
-            color: var(--color-success);
-            border: 1px solid var(--color-success);
-        }
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; color: #1E293B; }
+        .card { background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #E2E8F0; }
+
+        .step-dot { @apply w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all; }
+        .step-active { @apply bg-[#007B8F] text-white shadow-lg shadow-[#007B8F]/30; }
+        .step-completed { @apply bg-green-500 text-white; }
+
+        .plane-row { @apply flex items-center justify-between p-5 bg-white border border-gray-100 rounded-xl mb-3 transition-all hover:shadow-md hover:border-[#007B8F]/30; }
+
+        .badge-large { @apply bg-purple-50 text-purple-600 border border-purple-100; }
+        .badge-small { @apply bg-blue-50 text-blue-600 border border-blue-100; }
     </style>
 </head>
-<body>
-    <main class="container">
-        <section class="card mt-xl m-auto" style="max-width: 800px;">
-            <div class="card-header text-center">
-                <h1 class="card-title">Step 2: Select Aircraft</h1>
-                <p class="text-muted mb-sm">Route: {{ origin }} ➔ {{ dest }} | Time: {{ departure_time }}</p>
+<body class="min-h-screen py-12 px-4">
+    <main class="max-w-3xl mx-auto">
+
+        <div class="flex items-center justify-center mb-10 gap-4">
+            <div class="flex flex-col items-center">
+                <div class="step-dot step-completed"><span class="material-icons text-sm">check</span></div>
+                <span class="text-[10px] uppercase font-bold mt-2 text-green-500">Route</span>
+            </div>
+            <div class="w-12 h-px bg-green-200 -mt-4"></div>
+            <div class="flex flex-col items-center">
+                <div class="step-dot step-completed"><span class="material-icons text-sm">check</span></div>
+                <span class="text-[10px] uppercase font-bold mt-2 text-green-500">Schedule</span>
+            </div>
+            <div class="w-12 h-px bg-green-200 -mt-4"></div>
+            <div class="flex flex-col items-center">
+                <div class="step-dot step-active">3</div>
+                <span class="text-[10px] uppercase font-bold mt-2 text-[#007B8F]">Aircraft</span>
+            </div>
+        </div>
+
+        <section class="card overflow-hidden">
+            <div class="bg-[#0B253A] p-8 text-center text-white">
+                <h1 class="text-2xl font-bold">Select Aircraft</h1>
+                <div class="flex flex-wrap justify-center items-center gap-4 mt-4 text-xs font-medium text-blue-100/80">
+                    <span class="flex items-center bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
+                        <span class="material-icons text-[16px] mr-2">route</span>
+                        {{ origin }} ➔ {{ dest }}
+                    </span>
+                    <span class="flex items-center bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
+                        <span class="material-icons text-[16px] mr-2">event</span>
+                        {{ departure_time }}
+                    </span>
+                </div>
             </div>
 
-            <div class="card-body">
+            <div class="p-8">
                 {% if planes %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Aircraft ID</th>
-                            <th>Configuration</th>
-                            <th style="text-align: center;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for plane in planes %}
-                        <tr>
-                            <td style="font-weight: bold; color: var(--color-primary-darker);">#{{ plane[0] }}</td>
-                            <td>
-                                <span class="badge {% if plane[1] == 'Large' %}badge-large{% else %}badge-small{% endif %}">
-                                    {{ plane[1] }} Aircraft
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 ml-1">Available Fleet ({{ planes|length }})</p>
+                <div class="space-y-3">
+                    {% for plane in planes %}
+                    <div class="plane-row">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mr-4 text-[#007B8F]">
+                                <span class="material-icons">flight</span>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-[#0B253A]">Aircraft ID: #{{ plane[0] }}</h3>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter
+                                    {% if plane[1] == 'Large' %}badge-large{% else %}badge-small{% endif %}">
+                                    {{ plane[1] }} Config
                                 </span>
-                            </td>
-                            <td style="text-align: center;">
-                                <form action="/set_pricing" method="POST" style="margin: 0; display: inline;">
-                                    <input type="hidden" name="plane_id" value="{{ plane[0] }}">
-                                    <input type="hidden" name="plane_size" value="{{ plane[1] }}">
-                                    <input type="hidden" name="origin" value="{{ origin }}">
-                                    <input type="hidden" name="dest" value="{{ dest }}">
-                                    <input type="hidden" name="departure_time" value="{{ departure_time }}">
-                                    <button type="submit" class="btn btn-primary btn-sm">Select & Price</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                            </div>
+                        </div>
+
+                        <form action="/set_pricing" method="POST" class="m-0">
+                            <input type="hidden" name="plane_id" value="{{ plane[0] }}">
+                            <input type="hidden" name="plane_size" value="{{ plane[1] }}">
+                            <input type="hidden" name="origin" value="{{ origin }}">
+                            <input type="hidden" name="dest" value="{{ dest }}">
+                            <input type="hidden" name="departure_time" value="{{ departure_time }}">
+                            <button type="submit" class="bg-[#007B8F] hover:bg-[#006677] text-white text-xs font-bold py-2.5 px-6 rounded-lg transition-all shadow-sm">
+                                Select & Price
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
                 {% else %}
-                <div class="text-center p-xl">
-                    <div class="alert alert-error">
-                        <p style="margin: 0; font-weight: bold;">No available aircraft found for this time and location.</p>
+                <div class="text-center py-12 px-6">
+                    <div class="w-20 h-20 bg-red-50 text-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="material-icons text-4xl">event_busy</span>
                     </div>
-                    <div class="mt-md">
-                        <a href="{{ url_for('manage_flights') }}" class="btn btn-secondary">Go back and change details</a>
-                    </div>
+                    <h2 class="text-xl font-bold text-[#0B253A] mb-2">No Aircraft Available</h2>
+                    <p class="text-gray-500 text-sm mb-8">All aircraft at {{ origin }} are either booked or scheduled for maintenance during this time.</p>
+                    <a href="{{ url_for('manage_flights') }}" class="inline-flex items-center text-[#007B8F] font-bold hover:underline">
+                        <span class="material-icons mr-2">arrow_back</span>
+                        Go back and change flight details
+                    </a>
                 </div>
                 {% endif %}
             </div>
         </section>
+
+        <p class="text-center text-gray-400 text-[10px] mt-8 uppercase tracking-[0.2em]">
+            Step 3 of 3 • Resource Allocation
+        </p>
     </main>
 </body>
 </html>

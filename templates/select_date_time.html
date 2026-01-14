@@ -2,57 +2,107 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Step 2: Schedule Flight - FLYTAU</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; color: #1E293B; }
+        .card { background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #E2E8F0; }
+
+        /* אינדיקטור שלבים */
+        .step-dot { @apply w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all; }
+        .step-active { @apply bg-[#007B8F] text-white shadow-lg shadow-[#007B8F]/30; }
+        .step-inactive { @apply bg-gray-100 text-gray-400; }
+        .step-completed { @apply bg-green-500 text-white; }
+
+        .datetime-input {
+            @apply w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none transition-all focus:bg-white focus:ring-2 focus:ring-[#007B8F] focus:border-transparent font-medium;
+        }
+    </style>
 </head>
-<body>
-    <main class="container">
-        <section class="card mt-xl m-auto" style="max-width: 550px;">
-            <div class="card-header text-center">
-                <h1 class="card-title">Step 2: Scheduling</h1>
-                <div class="badge-route" style="background: #e7f3ff; padding: 8px; border-radius: 4px; display: inline-block; margin-top: 10px;">
-                    <strong>{{ origin }} ✈ {{ dest }}</strong>
+<body class="min-h-screen py-12 px-4">
+    <main class="max-w-2xl mx-auto">
+
+        <div class="flex items-center justify-center mb-10 gap-4">
+            <div class="flex flex-col items-center">
+                <div class="step-dot step-completed"><span class="material-icons text-sm">check</span></div>
+                <span class="text-[10px] uppercase font-bold mt-2 text-green-500">Route</span>
+            </div>
+            <div class="w-12 h-px bg-green-200 -mt-4"></div>
+            <div class="flex flex-col items-center">
+                <div class="step-dot step-active">2</div>
+                <span class="text-[10px] uppercase font-bold mt-2 text-[#007B8F]">Schedule</span>
+            </div>
+            <div class="w-12 h-px bg-gray-200 -mt-4"></div>
+            <div class="flex flex-col items-center">
+                <div class="step-dot step-inactive">3</div>
+                <span class="text-[10px] uppercase font-bold mt-2 text-gray-400">Aircraft</span>
+            </div>
+        </div>
+
+        <section class="card overflow-hidden">
+            <div class="bg-[#0B253A] p-8 text-center text-white">
+                <div class="inline-flex items-center gap-4 bg-white/10 px-6 py-2 rounded-full mb-4 border border-white/20">
+                    <span class="font-bold tracking-widest">{{ origin }}</span>
+                    <span class="material-icons text-[#007B8F]">flight_takeoff</span>
+                    <span class="font-bold tracking-widest">{{ dest }}</span>
                 </div>
-                <p class="text-muted mt-md">Route confirmed. Select the departure local time.</p>
+                <h1 class="text-2xl font-bold">Scheduling</h1>
+                <p class="text-blue-100/70 text-sm mt-2">Route confirmed. Please set the departure local time.</p>
             </div>
 
-            <div class="card-body">
-                <form id="scheduleForm" action="/get_available_resources" method="POST" class="flex flex-column gap-md">
+            <div class="p-8">
+                <form id="scheduleForm" action="/get_available_resources" method="POST" class="space-y-6">
                     <input type="hidden" name="origin" value="{{ origin }}">
                     <input type="hidden" name="dest" value="{{ dest }}">
 
-                    <div class="form-group mb-lg">
-                        <label style="color: #003366; font-weight: bold; display: block; margin-bottom: 8px;">
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">
                             Departure Date & Time (Local)
                         </label>
-                        <input type="datetime-local" id="departure_input" name="departure_time" class="form-control" required>
-                        <p id="current-time-msg" class="text-muted" style="font-size: 0.8rem; margin-top: 5px;">
-                            Current system date: Jan 13, 2026
-                        </p>
+                        <div class="relative">
+                            <input type="datetime-local" id="departure_input" name="departure_time" class="datetime-input" required>
+                            <span class="material-icons absolute right-4 top-4 text-gray-400 pointer-events-none">event</span>
+                        </div>
+                        <div class="flex items-center text-gray-400 mt-2 px-1">
+                            <span class="material-icons text-xs mr-1">schedule</span>
+                            <span id="current-time-msg" class="text-[11px] font-medium">System date: Jan 14, 2026</span>
+                        </div>
                     </div>
 
-                    <div class="flex gap-md mt-lg" style="display: flex; gap: 10px;">
-                        <button type="submit" class="btn btn-primary" style="flex: 2;">Next: Check Availability</button>
-                        <a href="{{ url_for('manage_flights') }}" class="btn btn-ghost" style="flex: 1; text-align: center; line-height: 2.5;">
+                    <div class="flex flex-col sm:flex-row gap-3 pt-4">
+                        <button type="submit" class="flex-[2] bg-[#007B8F] hover:bg-[#006677] text-white font-bold py-4 rounded-xl shadow-lg shadow-[#007B8F]/20 transition-all flex items-center justify-center gap-2 group">
+                            Check Availability
+                            <span class="material-icons transform group-hover:translate-x-1 transition-transform">search</span>
+                        </button>
+
+                        <a href="{{ url_for('manage_flights') }}" class="flex-[1] bg-gray-50 hover:bg-gray-100 text-gray-500 font-bold py-4 rounded-xl text-center transition-all border border-gray-100">
                             Cancel
                         </a>
                     </div>
                 </form>
             </div>
         </section>
+
+        <p class="text-center text-gray-400 text-[10px] mt-8 uppercase tracking-[0.2em]">
+            Step 2 of 3 • Availability Validation
+        </p>
     </main>
 
     <script>
         const dateInput = document.getElementById('departure_input');
 
-        // פונקציה שמחזירה את הזמן הנוכחי בפורמט שמתאים ל-input (YYYY-MM-DDTHH:mm)
         function getNowString() {
             const now = new Date();
+
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             return now.toISOString().slice(0, 16);
         }
 
-        // הגדרת מינימום בלוח השנה למניעת בחירת עבר
+
         dateInput.min = getNowString();
 
         document.getElementById('scheduleForm').onsubmit = function(e) {

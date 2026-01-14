@@ -2,77 +2,114 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registration Complete - FLYTAU</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+
     <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; color: #1E293B; }
+
+        .card {
+            background: white;
+            border-radius: 2rem;
+            box-shadow: 0 35px 60px -15px rgba(0,0,0,0.1);
+            border: 1px solid #E2E8F0;
+            overflow: hidden;
+            width: 100%;
+        }
+
         .data-row {
-            display: flex;
-            justify-content: space-between;
-            padding: var(--spacing-md) var(--spacing-lg);
-            border-bottom: 1px solid var(--color-gray-200);
+            @apply flex justify-between items-center py-6 border-b border-gray-50 last:border-0 px-4;
         }
-        .data-row:last-of-type {
-            border-bottom: none;
+        .data-label { @apply text-[11px] font-bold text-gray-400 uppercase tracking-widest; }
+        .data-value { @apply font-bold text-[#0B253A] text-right text-xl; }
+
+        .success-banner {
+            @apply bg-emerald-500 text-white p-16 text-center relative;
+            background-image: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            /* שימוש בעיגול פחות אגרסיבי בחלק העליון כדי למנוע חיתוך */
+            border-top-left-radius: 2rem;
+            border-top-right-radius: 2rem;
         }
-        .data-label {
-            color: var(--color-text-secondary);
-            font-weight: var(--font-weight-medium);
+
+        .role-badge {
+            @apply absolute top-10 right-10 bg-white/20 backdrop-blur-lg text-white text-xs font-black px-6 py-2 rounded-full uppercase tracking-[0.2em] border border-white/40 shadow-lg;
         }
-        .data-value {
-            color: var(--color-text-primary);
-            font-weight: var(--font-weight-bold);
-            text-align: right;
+
+        .avatar-placeholder {
+            @apply w-28 h-28 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl text-emerald-600;
+            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .badge-success {
-            background-color: var(--color-success-light);
-            color: var(--color-success);
-            border: 1px solid var(--color-success);
-        }
-        .badge-neutral {
-            background-color: var(--color-gray-100);
-            color: var(--color-text-secondary);
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
-<body>
-    <main class="container">
-        <section class="card mt-xl m-auto" style="max-width: 500px;">
-            <div class="card-header text-center">
-                <h1 class="card-title">✓ {{ role }} Registered</h1>
-                <p class="text-muted mb-sm">Successfully added to the system</p>
+<body class="min-h-screen py-16 px-6 flex items-center justify-center">
+    <main class="w-full max-w-2xl">
+
+        <section class="card">
+            <div class="success-banner">
+                <br>
+                <div class="role-badge">{{ role }}</div>
+
+                <div class="avatar-placeholder">
+                    <span class="material-icons text-6xl">person_add_alt</span>
+                </div>
+
+                <div class="relative z-10">
+                    <h1 class="text-4xl font-black tracking-tight uppercase italic leading-none mb-4">Member Registered</h1>
+                    <p class="text-white/90 text-xs font-bold uppercase tracking-[0.4em]">HR Database Verification Complete</p>
+                </div>
+
+                <span class="material-icons absolute bottom-0 left-0 text-white/10 text-[12rem] rotate-45 translate-y-12 -translate-x-12">flight</span>
             </div>
 
-            <div class="card-body">
-                <div class="data-row">
-                    <span class="data-label">Full Name:</span>
-                    <span class="data-value">{{ name }}</span>
+            <div class="p-12"> <div class="mb-12 bg-gray-50/50 rounded-3xl p-6 border border-gray-100">
+                    <div class="data-row">
+                        <span class="data-label">Legal Full Name</span>
+                        <span class="data-value">{{ name }}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Internal Employee ID</span>
+                        <span class="data-value font-mono text-[#007B8F]">#{{ member_id }}</span>
+                    </div>
+                    <div class="data-row border-none">
+                        <span class="data-label">Service Qualification</span>
+                        <span class="data-value">
+                            {% if has_certification %}
+                                <span class="flex items-center gap-2 text-emerald-600 justify-end">
+                                    <span class="material-icons text-xl">verified</span>
+                                    <span class="uppercase tracking-tighter">Long-Flight Certified</span>
+                                </span>
+                            {% else %}
+                                <span class="text-gray-400 font-medium uppercase text-sm tracking-tighter">Standard Route Operations</span>
+                            {% endif %}
+                        </span>
+                    </div>
                 </div>
-                <div class="data-row">
-                    <span class="data-label">Employee ID:</span>
-                    <span class="data-value">#{{ member_id }}</span>
-                </div>
-                <div class="data-row">
-                    <span class="data-label">Long Flight Cert:</span>
-                    <span class="data-value">
-                        {% if has_certification %}
-                            <span class="badge badge-success">Certified</span>
-                        {% else %}
-                            <span class="badge badge-neutral">N/A</span>
-                        {% endif %}
-                    </span>
-                </div>
-                <div class="mt-lg">
-                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary w-full">Back to Dashboard</a>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <a href="{{ url_for('admin_dashboard') }}" class="w-full bg-[#0B253A] hover:bg-[#1a3a5a] text-white font-bold py-5 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 group order-2 md:order-1">
+                        <span class="material-icons text-xl">space_dashboard</span>
+                        <span class="text-base">Admin Dashboard</span>
+                    </a>
+
+                    <button onclick="window.print()" class="w-full bg-[#007B8F] hover:bg-[#006677] text-white font-bold py-5 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 group order-1 md:order-2">
+                        <span class="material-icons text-xl">print</span>
+                        <span class="text-base">Print Record</span>
+                    </button>
                 </div>
             </div>
         </section>
+
+        <p class="text-center text-gray-400 text-[11px] mt-12 uppercase tracking-[0.5em] font-medium">
+            FLYTAU Personnel Registry • Official Document • 2026
+        </p>
     </main>
 </body>
 </html>

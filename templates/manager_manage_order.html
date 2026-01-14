@@ -1,51 +1,131 @@
-<section class="card" style="width: 100%; max-width: 1200px; margin: 20px auto; font-family: sans-serif;">
-    <div class="header-blue" style="background: #003366; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-        <h1 style="margin: 0; color: white !important;">Flight Cancellation & Filters</h1>
-    </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Management - FLYTAU</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
 
-    <div style="padding: 20px; background: #f1f5f9; border-bottom: 1px solid #cbd5e1;">
-        <form method="GET" action="/manage_orders" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
-            <div style="display: flex; flex-direction: column;">
-                <label style="font-size: 12px; margin-bottom: 5px;">Origin</label>
-                <input type="text" name="origin" placeholder="e.g. MXP" value="{{ request.args.get('origin', '') }}" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-            </div>
-            <div style="display: flex; flex-direction: column;">
-                <label style="font-size: 12px; margin-bottom: 5px;">Destination</label>
-                <input type="text" name="destination" placeholder="e.g. TLV" value="{{ request.args.get('destination', '') }}" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-            </div>
-            <div style="display: flex; flex-direction: column;">
-                <label style="font-size: 12px; margin-bottom: 5px;">Departure Date</label>
-                <input type="date" name="departure_date" value="{{ request.args.get('departure_date', '') }}" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-            </div>
-            <button type="submit" style="background: #003366; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">Filter Results</button>
-            <a href="/manage_orders" style="text-decoration: none; color: #666; font-size: 14px; margin-left: 10px;">Reset</a>
-        </form>
-    </div>
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; color: #1E293B; }
+        .card { background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #E2E8F0; }
 
-    <div class="card-body" style="padding: 0;">
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="background: #e2e8f0; text-align: left;">
-                    <th style="padding: 15px;">Flight ID</th>
-                    <th style="padding: 15px;">Route</th>
-                    <th style="padding: 15px;">Departure</th>
-                    <th style="padding: 15px;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for flight in flights %}
-                <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 15px; font-weight: bold;">{{ flight[0] }}</td> <td style="padding: 15px;">{{ flight[2] }} → {{ flight[3] }}</td> <td style="padding: 15px;">{{ flight[1] }}</td> <td style="padding: 15px;">
-                        <form action="/confirm_cancelation" method="POST" onsubmit="return confirm('Delete Flight {{ flight[0] }}?');">
-                            <input type="hidden" name="flight_id" value="{{ flight[0] }}">
-                            <button type="submit" style="background: #dc2626; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">
-                                Cancel Flight
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</section>
+        /* Table Styling */
+        .admin-table th { @apply px-6 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100; }
+        .admin-table td { @apply px-6 py-4 text-sm border-b border-gray-50 align-middle; }
+        .admin-table tr:last-child td { @apply border-b-0; }
+        .admin-table tr:hover { @apply bg-gray-50/50 transition-colors; }
+
+        .filter-input {
+            @apply bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none transition-all focus:ring-2 focus:ring-[#007B8F] focus:border-transparent;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-12 px-4">
+    <main class="max-w-6xl mx-auto">
+
+        <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
+            <div>
+                <a href="{{ url_for('admin_dashboard') }}" class="text-[#007B8F] text-xs font-bold uppercase tracking-widest flex items-center mb-2 hover:opacity-70 transition-opacity">
+                    <span class="material-icons text-sm mr-1">arrow_back</span>
+                    Admin Dashboard
+                </a>
+                <h1 class="text-3xl font-black text-[#0B253A] tracking-tight">Manage Flight Schedule</h1>
+                <p class="text-gray-400 text-sm">Review, filter, and manage active flight operations.</p>
+            </div>
+
+            <div class="bg-[#007B8F]/10 px-4 py-2 rounded-lg border border-[#007B8F]/20">
+                <span class="text-[#007B8F] font-bold text-xs uppercase tracking-tighter">Live Fleet Control</span>
+            </div>
+        </div>
+
+        <section class="card p-6 mb-8">
+            <form method="GET" action="/manage_orders" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Origin</label>
+                    <input type="text" name="origin" placeholder="e.g. MXP" value="{{ request.args.get('origin', '') }}" class="filter-input">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Destination</label>
+                    <input type="text" name="destination" placeholder="e.g. TLV" value="{{ request.args.get('destination', '') }}" class="filter-input">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Departure Date</label>
+                    <input type="date" name="departure_date" value="{{ request.args.get('departure_date', '') }}" class="filter-input">
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-grow bg-[#0B253A] hover:bg-[#1a3a5a] text-white font-bold py-2.5 rounded-lg transition-all shadow-md flex items-center justify-center gap-2">
+                        <span class="material-icons text-sm">filter_list</span>
+                        Apply
+                    </button>
+                    <a href="/manage_orders" class="bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold py-2.5 px-4 rounded-lg transition-all flex items-center justify-center">
+                        <span class="material-icons text-sm">restart_alt</span>
+                    </a>
+                </div>
+            </form>
+        </section>
+
+        <section class="card overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full admin-table">
+                    <thead>
+                        <tr>
+                            <th>Flight ID</th>
+                            <th>Route</th>
+                            <th>Departure Time</th>
+                            <th class="text-right">Operational Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for flight in flights %}
+                        <tr>
+                            <td>
+                                <span class="bg-gray-100 text-[#0B253A] font-mono font-bold px-3 py-1 rounded-md text-xs">
+                                    #{{ flight[0] }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="flex items-center gap-3">
+                                    <span class="font-bold text-[#0B253A]">{{ flight[2] }}</span>
+                                    <span class="material-icons text-gray-300 text-sm">trending_flat</span>
+                                    <span class="font-bold text-[#0B253A]">{{ flight[3] }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="flex items-center text-gray-600">
+                                    <span class="material-icons text-sm mr-2 text-[#007B8F]">schedule</span>
+                                    {{ flight[1] }}
+                                </div>
+                            </td>
+                            <td class="text-right">
+                                <form action="/confirm_cancelation" method="POST" onsubmit="return confirm('WARNING: Are you sure you want to cancel Flight {{ flight[0] }}? This will affect all booked passengers.');" class="inline-block">
+                                    <input type="hidden" name="flight_id" value="{{ flight[0] }}">
+                                    <button type="submit" class="bg-white border-2 border-red-100 text-red-500 hover:bg-red-500 hover:text-white font-bold py-2 px-4 rounded-xl transition-all text-xs flex items-center gap-2 ml-auto group">
+                                        <span class="material-icons text-sm">delete_forever</span>
+                                        Cancel Flight
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not flights %}
+                        <tr>
+                            <td colspan="4" class="text-center py-20">
+                                <span class="material-icons text-5xl text-gray-200 mb-2">search_off</span>
+                                <p class="text-gray-400 font-medium">No flights found matching your criteria.</p>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer class="mt-8 text-center text-gray-400 text-[10px] uppercase tracking-[0.2em]">
+            FLYTAU Flight Control System • Authorized Access Only
+        </footer>
+    </main>
+</body>
+</html>
