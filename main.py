@@ -263,11 +263,24 @@ def guest_dashboard():
     """
     if session.get("user_type") != "guest":
         return redirect("/")
+    
+    # Pagination for list of all future flights with available seats
+    try:
+        page = int(request.args.get("page", 1))
+        if page < 1:
+            page = 1
+    except (TypeError, ValueError):
+        page = 1
+
+    # Fetch paginated future flights (only those with at least 1 available seat)
+    active_flights = get_all_future_flights(page=page, per_page=5)
+    
     airports = get_all_airports()
     return render_template(
         "guest.html",
         guest_email=session.get("guest_email"),
-        airports=airports
+        airports=airports,
+        active_flights=active_flights
     )
 
 

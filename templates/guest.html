@@ -128,6 +128,79 @@
                 <button type="submit" class="bg-[#007B8F] text-white font-bold py-3.5 rounded-lg shadow-md hover:bg-[#006677] transition-all">Search</button>
             </form>
             <div id="search-results" class="mt-12 hidden"></div>
+
+            {% if active_flights %}
+            <div id="all-future-flights" class="mt-12">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold text-[#0B253A]">Available Upcoming Flights</h2>
+                    <p class="text-sm text-gray-500">
+                        Showing page {{ active_flights.page }} of {{ active_flights.total_pages or 1 }}
+                    </p>
+                </div>
+
+                {% if active_flights.flights %}
+                <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Flight ID</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Route</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Departure</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Arrival</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Economy Price</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Business Price</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Plane</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in active_flights.flights %}
+                            <tr class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                <td class="px-4 py-3 text-gray-900">#{{ f.flight_id }}</td>
+                                <td class="px-4 py-3 text-gray-900">{{ f.origin_airport }} → {{ f.destination_airport }}</td>
+                                <td class="px-4 py-3 text-gray-700">{{ f.departure_datetime }}</td>
+                                <td class="px-4 py-3 text-gray-700">{{ f.arrival_datetime }}</td>
+                                <td class="px-4 py-3 text-gray-900 font-semibold">${{ f.economy_seat_price }}</td>
+                                <td class="px-4 py-3 text-gray-900 font-semibold">${{ f.business_seat_price }}</td>
+                                <td class="px-4 py-3 text-gray-700">{{ f.plane_id }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex items-center justify-between mt-4">
+                    <div>
+                        <span class="text-sm text-gray-500">
+                            Total flights: {{ active_flights.total }}
+                        </span>
+                    </div>
+                    <div class="flex gap-2">
+                        {% if active_flights.page > 1 %}
+                        <a href="{{ url_for('guest_dashboard', page=active_flights.page - 1) }}"
+                           class="bg-[#0B253A] text-white font-bold py-2 px-6 rounded-lg hover:bg-[#1a3a5a] transition-all text-sm">
+                            Previous
+                        </a>
+                        {% else %}
+                        <button class="bg-[#0B253A] text-white font-bold py-2 px-6 rounded-lg opacity-50 cursor-not-allowed text-sm" disabled>Previous</button>
+                        {% endif %}
+
+                        {% if active_flights.total_pages and active_flights.page < active_flights.total_pages %}
+                        <a href="{{ url_for('guest_dashboard', page=active_flights.page + 1) }}"
+                           class="bg-[#007B8F] text-white font-bold py-2 px-6 rounded-lg hover:bg-[#006677] transition-all text-sm">
+                            Next
+                        </a>
+                        {% else %}
+                        <button class="bg-[#007B8F] text-white font-bold py-2 px-6 rounded-lg opacity-50 cursor-not-allowed text-sm" disabled>Next</button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="mt-6 text-center py-10 border-2 border-dashed rounded-2xl border-gray-200 text-gray-400">
+                    No upcoming flights with available seats were found.
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
         </section>
 
         <section id="section-manage" class="card p-8 {{ '' if ticket else 'hidden' }}">
