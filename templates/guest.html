@@ -101,25 +101,25 @@
             <form id="flight-search-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                 <div>
                     <label class="block text-sm font-semibold mb-2 text-gray-600">Origin</label>
-                    <select name="origin_airport" class="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#007B8F]" required>
+                    <select id="origin_airport" name="origin_airport" class="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#007B8F]" required>
                         <option value="" disabled selected>From?</option>
                         {% for airport in airports %} <option value="{{ airport }}">{{ airport }}</option> {% endfor %}
                     </select>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-2 text-gray-600">Destination</label>
-                    <select name="destination_airport" class="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#007B8F]" required>
+                    <select id="destination_airport" name="destination_airport" class="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#007B8F]" required>
                         <option value="" disabled selected>To?</option>
                         {% for airport in airports %} <option value="{{ airport }}">{{ airport }}</option> {% endfor %}
                     </select>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-2 text-gray-600">Departure Date</label>
-                    <input type="date" name="departure_date" class="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#007B8F]" required>
+                    <input type="date" id="departure_date" name="departure_date" class="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#007B8F]" required>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-2 text-gray-600">Passengers</label>
-                    <select name="passengers" class="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#007B8F]" required>
+                    <select id="passengers" name="passengers" class="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#007B8F]" required>
                         {% for i in range(1, 10) %}
                         <option value="{{ i }}">{{ i }} Passenger{{ 's' if i > 1 else '' }}</option>
                         {% endfor %}
@@ -128,6 +128,89 @@
                 <button type="submit" class="bg-[#007B8F] text-white font-bold py-3.5 rounded-lg shadow-md hover:bg-[#006677] transition-all">Search</button>
             </form>
             <div id="search-results" class="mt-12 hidden"></div>
+
+            {% if active_flights %}
+            <div id="all-future-flights" class="mt-12">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold text-[#0B253A]">Available Upcoming Flights</h2>
+                    <p class="text-sm text-gray-500">
+                        Showing page {{ active_flights.page }} of {{ active_flights.total_pages or 1 }}
+                    </p>
+                </div>
+
+                {% if active_flights.flights %}
+                <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Flight ID</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Route</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Departure</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Arrival</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Economy Price</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Business Price</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Plane</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase text-xs tracking-wider border-b-2 border-gray-300">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in active_flights.flights %}
+                            <tr class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                <td class="px-4 py-3 text-gray-900">#{{ f.flight_id }}</td>
+                                <td class="px-4 py-3 text-gray-900">{{ f.origin_airport }} → {{ f.destination_airport }}</td>
+                                <td class="px-4 py-3 text-gray-700">{{ f.departure_datetime }}</td>
+                                <td class="px-4 py-3 text-gray-700">{{ f.arrival_datetime }}</td>
+                                <td class="px-4 py-3 text-gray-900 font-semibold">${{ f.economy_seat_price }}</td>
+                                <td class="px-4 py-3 text-gray-900 font-semibold">${{ f.business_seat_price }}</td>
+                                <td class="px-4 py-3 text-gray-700">{{ f.plane_id }}</td>
+                                <td class="px-4 py-3">
+                                    <button type="button" 
+                                            class="quick-search-btn bg-[#007B8F] text-white font-semibold py-1.5 px-4 rounded-lg hover:bg-[#006677] transition-all text-xs whitespace-nowrap"
+                                            data-origin="{{ f.origin_airport }}"
+                                            data-destination="{{ f.destination_airport }}"
+                                            data-date="{{ f.departure_datetime }}">
+                                        Quick Search
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex items-center justify-between mt-4">
+                    <div>
+                        <span class="text-sm text-gray-500">
+                            Total flights: {{ active_flights.total }}
+                        </span>
+                    </div>
+                    <div class="flex gap-2">
+                        {% if active_flights.page > 1 %}
+                        <a href="{{ url_for('guest_dashboard', page=active_flights.page - 1) }}"
+                           class="bg-[#0B253A] text-white font-bold py-2 px-6 rounded-lg hover:bg-[#1a3a5a] transition-all text-sm">
+                            Previous
+                        </a>
+                        {% else %}
+                        <button class="bg-[#0B253A] text-white font-bold py-2 px-6 rounded-lg opacity-50 cursor-not-allowed text-sm" disabled>Previous</button>
+                        {% endif %}
+
+                        {% if active_flights.total_pages and active_flights.page < active_flights.total_pages %}
+                        <a href="{{ url_for('guest_dashboard', page=active_flights.page + 1) }}"
+                           class="bg-[#007B8F] text-white font-bold py-2 px-6 rounded-lg hover:bg-[#006677] transition-all text-sm">
+                            Next
+                        </a>
+                        {% else %}
+                        <button class="bg-[#007B8F] text-white font-bold py-2 px-6 rounded-lg opacity-50 cursor-not-allowed text-sm" disabled>Next</button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="mt-6 text-center py-10 border-2 border-dashed rounded-2xl border-gray-200 text-gray-400">
+                    No upcoming flights with available seats were found.
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
         </section>
 
         <section id="section-manage" class="card p-8 {{ '' if ticket else 'hidden' }}">
@@ -184,6 +267,39 @@
         }
 
         window.onload = function() { {% if ticket %} showTab('manage'); {% endif %} };
+
+        // Quick search button functionality
+        document.addEventListener('DOMContentLoaded', function() {
+          document.querySelectorAll('.quick-search-btn').forEach(button => {
+            button.addEventListener('click', function() {
+              const origin = this.getAttribute('data-origin');
+              const destination = this.getAttribute('data-destination');
+              const dateTime = this.getAttribute('data-date');
+              
+              // Extract date from datetime string (format: "YYYY-MM-DD HH:MM:SS" -> "YYYY-MM-DD")
+              const date = dateTime ? dateTime.split(' ')[0] : '';
+              
+              // Populate form fields
+              const originSelect = document.getElementById('origin_airport');
+              const destSelect = document.getElementById('destination_airport');
+              const dateInput = document.getElementById('departure_date');
+              
+              if (originSelect && origin) {
+                originSelect.value = origin;
+              }
+              if (destSelect && destination) {
+                destSelect.value = destination;
+              }
+              if (dateInput && date) {
+                dateInput.value = date;
+              }
+              
+              // Scroll to form and ensure "Book A Flight" tab is active
+              showTab('book');
+              document.getElementById('section-book').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+          });
+        });
 
         document.getElementById('flight-search-form').addEventListener('submit', async function(e) {
             e.preventDefault();
