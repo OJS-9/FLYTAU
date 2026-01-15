@@ -297,25 +297,21 @@ def search_flights_route():
     Supports both GET (query parameters) and POST (form data).
     """
 
-    # 1. Provide the search page on a simple GET request without parameters
     if request.method == "GET" and not request.args.get("origin_airport"):
         airports = get_all_airports()
         return render_template("customer_search.html", airports=airports)
 
-    # 2. Determine data source (URL arguments for GET, Form data for POST)
     data = request.args if request.method == "GET" else request.form
 
     user_type = session.get("user_type")
     if user_type not in ["customer", "guest"]:
         return jsonify({"error": "You must be signed in to search flights."}), 401
 
-    # 3. Extract and sanitize input data
     origin_airport = data.get("origin_airport", "").strip().upper()
     destination_airport = data.get("destination_airport", "").strip().upper()
     departure_date = data.get("departure_date", "").strip()
     passengers = data.get("passengers", "1").strip()
 
-    # 4. Server-side validation
     errors = []
 
     if not origin_airport or len(origin_airport) != 3:
@@ -338,7 +334,6 @@ def search_flights_route():
         except ValueError:
             errors.append("Invalid date format. Please use YYYY-MM-DD.")
 
-    # 5. Handle passenger count
     try:
         passengers_int = int(passengers)
         if passengers_int < 1 or passengers_int > 9:
@@ -353,7 +348,6 @@ def search_flights_route():
     if errors:
         return jsonify({"error": " ".join(errors)}), 400
 
-    # 6. Execute search in Database
     try:
         # Note: Ensure search_flights in utils.py uses DATE(Departure_DateTime)
         flights = search_flights(origin_airport, destination_airport, departure_date, passengers_int)
@@ -415,15 +409,12 @@ def manage_reservations():
     # Identify the active email session
     email = user_email or guest_email
 
-    # 1. Validation: Ensure both Order ID and Session Email exist
     if not order_id or not email:
         flash("Please provide a valid Order ID and ensure you are logged in.")
         return redirect(url_for('user_dashboard' if user_email else 'guest_dashboard_route'))
 
-    # 2. Maintenance: Refresh order statuses (Active -> Completed) before fetching
     update_active_orders_to_completed()
 
-    # 3. Data Retrieval: Attempt to fetch ticket details from the database
     try:
         # We use the email to ensure a user can only view THEIR own orders
         ticket = get_ticket_details(int(order_id), email)
@@ -431,13 +422,11 @@ def manage_reservations():
         print(f"Error retrieving ticket {order_id}: {e}")
         ticket = None
 
-    # 4. Error Handling: No ticket found for this specific email/ID combination
     if not ticket:
         error_msg = f"Order #{order_id} was not found or is not linked to your email."
         flash(error_msg)
         return redirect(url_for('user_dashboard' if user_email else 'guest_dashboard_route'))
 
-    # 5. Routing: Render the correct template based on User Type
     if user_email:
         # REGISTERED CUSTOMER: Pass data to the dedicated management page
         order_data = ticket.copy()
@@ -508,18 +497,15 @@ def booking_summary():
     flight_id = request.form.get('flight_id')
     max_seats = session.get('passengers', 1)
 
-    # 1. Validation
     if not selected_seats or len(selected_seats) != int(max_seats):
         flash(f"Error: You must select exactly {max_seats} seats.")
         return redirect(url_for('select_seat', flight_id=flight_id))
 
-    # 2. Get flight details
     flight = get_flight_by_id(int(flight_id))
     if not flight:
         flash("Error: Flight details could not be retrieved.")
         return redirect(url_for('search_flights_route'))
 
-    # 3. Dynamic Price Calculation
     total_price = 0
     seat_details = []
     try:
@@ -541,13 +527,12 @@ def booking_summary():
         print(f"Database Error: {e}")
         return redirect(url_for('select_seat', flight_id=flight_id))
 
-    # 4. PRE-FILL LOGIC: Fetch from 'Costumer' table to show on screen
     # This data is passed to the HTML but will NOT be saved to the 'Order' table later.
     user_data = None
     if session.get("user_type") == "customer":
         email = session.get("user_email")
         with get_db_connection() as cursor:
-            cursor.execute("SELECT Passport_Num, B_Date FROM Costumer WHERE Mail = %s", (email,))
+            cursor.execute("SELECT Passport_Num, B_Date FROM costumer WHERE Mail = %s", (email,))
             user_data = cursor.fetchone()
 
     return render_template("booking_summary.html",
@@ -634,7 +619,7 @@ def manage_orders_page():
             f.Path_Origin_Airport AS origin, 
             f.Path_Dest_Airport AS destination
         FROM flight f
-        JOIN `Order` o ON f.ID = o.Flight_ID
+        JOIN `order` o ON f.ID = o.Flight_ID
         WHERE o.Status != 'System Cancelation'
         AND f.is_active = 1 
     """
@@ -664,7 +649,6 @@ def manage_orders_page():
     except Exception as e:
         print(f"Database error: {e}")
 
-    # 4. שליחת הנתונים ל-HTML
     return render_template('manager_manage_order.html', flights=flights_data)
 
 @app.route('/view_reports')
@@ -1090,7 +1074,6 @@ def step_3_select_crew():
 @app.route('/finalize_flight_creation', methods=['POST'])
 def finalize_flight_creation():
     try:
-        # 1. Extract data from form
         origin = request.form.get('origin')
         dest = request.form.get('dest')
         departure_time = request.form.get('departure_time')
@@ -1103,23 +1086,19 @@ def finalize_flight_creation():
         manager_id = session.get('user_id')
 
         with get_db_connection() as cursor:
-            # 2. Get Plane Size and Staffing Requirements
             cursor.execute("SELECT Size FROM plane WHERE ID = %s", (plane_id,))
             plane_row = cursor.fetchone()
             plane_size = plane_row[0]
             req_p, req_s = (3, 6) if plane_size == 'Large' else (2, 3)
 
-            # 3. Server-side Crew Validation
             if len(pilot_ids) != req_p or len(attendant_ids) != req_s:
                 return f"Error: Invalid crew count.", 400
 
-            # 4. Fetch Duration from Path table
             cursor.execute("SELECT Clock_Duration FROM path WHERE Origin_Airport = %s AND Dest_Airport = %s",
                            (origin, dest))
             path_row = cursor.fetchone()
             duration = path_row[0] if path_row else 2
 
-            # 5. Insert Flight with USER-DEFINED prices
             sql_flight = """
                 INSERT INTO flight (
                     Departure_DateTime, Path_Dest_Airport, Path_Origin_Airport, 
@@ -1134,7 +1113,6 @@ def finalize_flight_creation():
             ))
             new_flight_id = cursor.lastrowid
 
-            # 6. Assign Crew
             pilot_assignments = [(p_id, new_flight_id) for p_id in pilot_ids]
             cursor.executemany("INSERT INTO pilot_works_flight (Pilot_ID, Flight_ID) VALUES (%s, %s)",
                                pilot_assignments)
@@ -1143,7 +1121,6 @@ def finalize_flight_creation():
             cursor.executemany("INSERT INTO steward_works_flight (Steward_ID, Flight_ID) VALUES (%s, %s)",
                                steward_assignments)
 
-            # 7. Fetch Crew Names for summary
             format_p = ','.join(['%s'] * len(pilot_ids))
             cursor.execute(f"SELECT First_Name, Last_Name FROM pilot WHERE ID IN ({format_p})", tuple(pilot_ids))
             pilots_names = cursor.fetchall()
@@ -1152,7 +1129,6 @@ def finalize_flight_creation():
             cursor.execute(f"SELECT First_Name, Last_Name FROM steward WHERE ID IN ({format_s})", tuple(attendant_ids))
             stewards_names = cursor.fetchall()
 
-        # 8. Success Response including prices
         return render_template('flight_summary.html',
                                flight_id=new_flight_id,
                                origin=origin, dest=dest,
@@ -1231,18 +1207,15 @@ def report_aircraft_activity():
 def confirm_cancelation_route():
     f_id = request.form.get('flight_id')
 
-    # 1. שליפת נתונים לסיכום (לפני הביטול)
     with get_db_connection() as cursor:
-        cursor.execute("SELECT COUNT(*) FROM `Order` WHERE Flight_ID = %s", (f_id,))
+        cursor.execute("SELECT COUNT(*) FROM `order` WHERE Flight_ID = %s", (f_id,))
         orders_count = cursor.fetchone()[0]
 
         cursor.execute("SELECT Path_Origin_Airport, Path_Dest_Airport FROM flight WHERE ID = %s", (f_id,))
         flight_data = cursor.fetchone()
         origin, dest = flight_data[0], flight_data[1]
 
-    # 2. ביצוע הביטול ב-utils
     if process_system_cancellation(f_id):
-        # 3. מעבר לדף הסיכום שכבר הקמת עם הנתונים
         return render_template('cancel_summary.html',
                                flight_id=f_id,
                                orders_count=orders_count,

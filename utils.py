@@ -34,7 +34,7 @@ def get_customer_by_email_and_password(email: str, password: str) -> Optional[Tu
     """
     with get_db_connection() as cursor:
         cursor.execute(
-            "SELECT Mail, First_Name, Last_Name FROM Costumer WHERE Mail = %s AND Password = %s",
+            "SELECT Mail, First_Name, Last_Name FROM costumer WHERE Mail = %s AND Password = %s",
             (email, password),
         )
         return cursor.fetchone()
@@ -46,7 +46,7 @@ def get_manager_by_id_and_password(manager_id: int, password: str) -> Optional[T
     """
     with get_db_connection() as cursor:
         cursor.execute(
-            "SELECT ID, First_Name, Last_Name FROM Manager WHERE ID = %s AND Password = %s",
+            "SELECT ID, First_Name, Last_Name FROM manager WHERE ID = %s AND Password = %s",
             (manager_id, password),
         )
         return cursor.fetchone()
@@ -57,7 +57,7 @@ def customer_email_exists(email: str) -> bool:
     Check if a customer with the given email already exists.
     """
     with get_db_connection() as cursor:
-        cursor.execute("SELECT Mail FROM Costumer WHERE Mail = %s", (email,))
+        cursor.execute("SELECT Mail FROM costumer WHERE Mail = %s", (email,))
         return cursor.fetchone() is not None
 
 
@@ -76,7 +76,7 @@ def create_customer_with_phones(
     with get_db_connection() as cursor:
         cursor.execute(
             """
-            INSERT INTO Costumer (Mail, Passport_Num, B_Date, Password, Signup_date, First_Name, Last_Name)
+            INSERT INTO costumer (Mail, Passport_Num, B_Date, Password, Signup_date, First_Name, Last_Name)
             VALUES (%s, %s, %s, %s, CURDATE(), %s, %s)
             """,
             (email, passport_num, b_date, password, first_name, last_name),
@@ -87,22 +87,22 @@ def create_customer_with_phones(
 
         phone_rows = [(phone, email) for phone in phones]
         cursor.executemany(
-            "INSERT INTO Costumer_Phone (Phone, Costumer_Mail) VALUES (%s, %s)",
+            "INSERT INTO costumer_phone (Phone, Costumer_Mail) VALUES (%s, %s)",
             phone_rows,
         )
 
 
 def guest_sign_in(email: str, first_name: str, last_name: str, phones: list) -> None:
     with get_db_connection() as cursor:
-        cursor.execute("SELECT Mail FROM Guest WHERE Mail = %s", (email,))
+        cursor.execute("SELECT Mail FROM guest WHERE Mail = %s", (email,))
         if not cursor.fetchone():
             cursor.execute(
-                "INSERT INTO Guest (Mail, first_name, last_name) VALUES (%s, %s, %s)",
+                "INSERT INTO guest (Mail, first_name, last_name) VALUES (%s, %s, %s)",
                 (email, first_name, last_name)
             )
         else:
             cursor.execute(
-                "UPDATE Guest SET first_name = %s, last_name = %s WHERE Mail = %s",
+                "UPDATE guest SET first_name = %s, last_name = %s WHERE Mail = %s",
                 (first_name, last_name, email)
             )
 
@@ -126,14 +126,14 @@ def search_flights(origin_airport: str, destination_airport: str, departure_date
                 f.ID, f.Departure_DateTime, f.Arrival_DateTime,
                 f.Path_Origin_Airport, f.Path_Dest_Airport,
                 f.Business_Seat_Price, f.Economy_Seat_Price, f.Plane_ID
-            FROM Flight f
-            JOIN Plane p ON f.Plane_ID = p.ID
+            FROM flight f
+            JOIN plane p ON f.Plane_ID = p.ID
             LEFT JOIN (
                 SELECT 
                     o.Flight_ID,
                     COUNT(a.Class_ID) AS booked_seats
-                FROM Assigned a
-                JOIN `Order` o ON a.Order_ID = o.Order_ID
+                FROM assigned a
+                JOIN `order` o ON a.Order_ID = o.Order_ID
                 WHERE o.Status = 'Active'
                 GROUP BY o.Flight_ID
             ) seat_counts ON f.ID = seat_counts.Flight_ID
@@ -176,14 +176,14 @@ def get_all_future_flights(page: int = 1, per_page: int = 10) -> Dict:
         cursor.execute(
             """
             SELECT COUNT(DISTINCT f.ID)
-            FROM Flight f
-            JOIN Plane p ON f.Plane_ID = p.ID
+            FROM flight f
+            JOIN plane p ON f.Plane_ID = p.ID
             LEFT JOIN (
                 SELECT 
                     o.Flight_ID,
                     COUNT(a.Class_ID) AS booked_seats
-                FROM Assigned a
-                JOIN `Order` o ON a.Order_ID = o.Order_ID
+                FROM assigned a
+                JOIN `order` o ON a.Order_ID = o.Order_ID
                 WHERE o.Status = 'Active'
                 GROUP BY o.Flight_ID
             ) seat_counts ON f.ID = seat_counts.Flight_ID
@@ -200,14 +200,14 @@ def get_all_future_flights(page: int = 1, per_page: int = 10) -> Dict:
                 f.ID, f.Departure_DateTime, f.Arrival_DateTime,
                 f.Path_Origin_Airport, f.Path_Dest_Airport,
                 f.Business_Seat_Price, f.Economy_Seat_Price, f.Plane_ID
-            FROM Flight f
-            JOIN Plane p ON f.Plane_ID = p.ID
+            FROM flight f
+            JOIN plane p ON f.Plane_ID = p.ID
             LEFT JOIN (
                 SELECT 
                     o.Flight_ID,
                     COUNT(a.Class_ID) AS booked_seats
-                FROM Assigned a
-                JOIN `Order` o ON a.Order_ID = o.Order_ID
+                FROM assigned a
+                JOIN `order` o ON a.Order_ID = o.Order_ID
                 WHERE o.Status = 'Active'
                 GROUP BY o.Flight_ID
             ) seat_counts ON f.ID = seat_counts.Flight_ID
@@ -255,10 +255,10 @@ def get_ticket_details(order_id: int, email: str):
                 o.Order_ID, f.Path_Origin_Airport, f.Path_Dest_Airport, f.Departure_DateTime,
                 GROUP_CONCAT(CONCAT(c.Row_Num, c.Column_Letter) SEPARATOR ', ') as Seats,
                 o.Status, o.Total_Price
-            FROM `Order` o
-            JOIN Flight f ON o.Flight_ID = f.ID
-            LEFT JOIN Assigned a ON o.Order_ID = a.Order_ID
-            LEFT JOIN CLASS c ON a.Class_ID = c.ID 
+            FROM `order` o
+            JOIN flight f ON o.Flight_ID = f.ID
+            LEFT JOIN assigned a ON o.Order_ID = a.Order_ID
+            LEFT JOIN class c ON a.Class_ID = c.ID 
             WHERE o.Order_ID = %s AND (o.Guest_Mail = %s OR o.Costumer_Mail = %s)
             GROUP BY o.Order_ID
         """
@@ -291,10 +291,10 @@ def get_user_order_history(email: str) -> List[Dict]:
                 o.Order_ID, f.Path_Origin_Airport, f.Path_Dest_Airport, f.Departure_DateTime,
                 GROUP_CONCAT(CONCAT(c.Row_Num, c.Column_Letter) SEPARATOR ', ') as Seats,
                 o.Status, o.Total_Price, o.Order_Date
-            FROM `Order` o
-            JOIN Flight f ON o.Flight_ID = f.ID
-            LEFT JOIN Assigned a ON o.Order_ID = a.Order_ID
-            LEFT JOIN CLASS c ON a.Class_ID = c.ID 
+            FROM `order` o
+            JOIN flight f ON o.Flight_ID = f.ID
+            LEFT JOIN assigned a ON o.Order_ID = a.Order_ID
+            LEFT JOIN class c ON a.Class_ID = c.ID 
             WHERE (o.Guest_Mail = %s OR o.Costumer_Mail = %s)
             GROUP BY o.Order_ID
             ORDER BY o.Order_Date DESC
@@ -327,8 +327,8 @@ def delete_ticket(order_id: int, email: str):
         try:
             query = """
                 SELECT f.Departure_DateTime, o.Total_Price, o.Status
-                FROM `Order` o
-                JOIN Flight f ON o.Flight_ID = f.ID
+                FROM `order` o
+                JOIN flight f ON o.Flight_ID = f.ID
                 WHERE o.Order_ID = %s AND (o.Guest_Mail = %s OR o.Costumer_Mail = %s)
             """
             cursor.execute(query, (order_id, email, email))
@@ -350,13 +350,13 @@ def delete_ticket(order_id: int, email: str):
 
             # Update status and price in Order table
             cursor.execute("""
-                UPDATE `Order` 
+                UPDATE `order` 
                 SET Status = 'Costumer Cancelation', Total_Price = %s 
                 WHERE Order_ID = %s
             """, (penalty_fee, order_id))
 
             # Free up the seats
-            cursor.execute("DELETE FROM Assigned WHERE Order_ID = %s", (order_id,))
+            cursor.execute("DELETE FROM assigned WHERE Order_ID = %s", (order_id,))
 
             return True, f"Order successfully cancelled. A 5% fee (${penalty_fee:.2f}) was charged."
 
@@ -375,12 +375,12 @@ def get_flight_seat_map(flight_id: int):
                 IF(EXISTS(
                     SELECT 1 
                     FROM flytau.assigned a
-                    JOIN flytau.`Order` o ON a.Order_ID = o.Order_ID 
+                    JOIN flytau.`order` o ON a.Order_ID = o.Order_ID 
                     WHERE a.Class_ID = c.ID 
                       AND o.Flight_ID = %s
                 ), 1, 0) AS is_occupied
             FROM flytau.class c
-            JOIN flytau.Flight f ON f.Plane_ID = c.Plane_ID
+            JOIN flytau.flight f ON f.Plane_ID = c.Plane_ID
             WHERE f.ID = %s
             ORDER BY c.Row_Num, c.Column_Letter
         """
@@ -404,7 +404,7 @@ def get_flight_by_id(flight_id: int) -> Optional[Dict]:
         cursor.execute("""
             SELECT ID, Departure_DateTime, Path_Origin_Airport, Path_Dest_Airport, 
                    Business_Seat_Price, Economy_Seat_Price 
-            FROM Flight WHERE ID = %s
+            FROM flight WHERE ID = %s
         """, (flight_id,))
         row = cursor.fetchone()
         if row:
@@ -426,20 +426,20 @@ def create_order_with_seats(flight_id: int, selected_seats: list, total_price: f
     Note: Passport and DOB are NOT saved here anymore to comply with table constraints.
     """
     with get_db_connection() as cursor:
-        cursor.execute("SELECT Plane_ID FROM Flight WHERE ID = %s", (flight_id,))
+        cursor.execute("SELECT Plane_ID FROM flight WHERE ID = %s", (flight_id,))
         plane_result = cursor.fetchone()
         if not plane_result: raise Exception(f"Flight ID {flight_id} not found.")
         plane_id = plane_result[0]
 
         # SQL query back to original 6-column structure
         order_sql = """
-            INSERT INTO `Order` (Status, Order_Date, Total_Price, Flight_ID, Costumer_Mail, Guest_Mail)
+            INSERT INTO `order` (Status, Order_Date, Total_Price, Flight_ID, Costumer_Mail, Guest_Mail)
             VALUES ('Active', NOW(), %s, %s, %s, %s)
         """
         cursor.execute(order_sql, (total_price, flight_id, customer_mail, guest_mail))
         new_order_id = cursor.lastrowid
 
-        assigned_sql = "INSERT INTO Assigned (Class_ID, Order_ID, Plane_ID) VALUES (%s, %s, %s)"
+        assigned_sql = "INSERT INTO assigned (Class_ID, Order_ID, Plane_ID) VALUES (%s, %s, %s)"
         for seat_id in selected_seats:
             cursor.execute(assigned_sql, (seat_id, new_order_id, plane_id))
         return new_order_id
@@ -553,10 +553,10 @@ def get_total_revenue_report() -> List[Dict]:
                 c.Type,
                 SUM(o.Total_Price) AS Total_Revenue,
                 COUNT(o.Order_ID) AS Number_of_Tickets
-            FROM `Order` o
-            JOIN Assigned a ON o.Order_ID = a.Order_ID
-            JOIN Plane p ON a.Plane_ID = p.ID
-            JOIN Class c ON a.Class_ID = c.ID AND a.Plane_ID = c.Plane_ID
+            FROM `order` o
+            JOIN assigned a ON o.Order_ID = a.Order_ID
+            JOIN plane p ON a.Plane_ID = p.ID
+            JOIN class c ON a.Class_ID = c.ID AND a.Plane_ID = c.Plane_ID
             WHERE o.Status IN ('Active', 'Completed', 'Costumer Cancelation')
             GROUP BY p.Size, p.Manufacturer, c.Type
             ORDER BY Total_Revenue DESC
@@ -594,7 +594,7 @@ def get_cancellation_rate_report() -> List[Dict]:
                     (COUNT(CASE WHEN o.Status = 'Costumer Cancelation' THEN 1 END) / COUNT(o.Order_ID)) * 100, 
                     2
                 ) AS Cancellation_Rate_Percentage
-            FROM `Order` o
+            FROM `order` o
             WHERE o.Status != 'System Cancelation'
             GROUP BY YEAR(o.Order_Date), MONTH(o.Order_Date)
             ORDER BY Order_Year DESC, Order_Month DESC
@@ -641,8 +641,8 @@ def update_active_orders_to_completed() -> int:
             # Query all Active orders with their flight departure datetime
             query = """
                 SELECT o.Order_ID, f.Departure_DateTime 
-                FROM `Order` o
-                JOIN Flight f ON o.Flight_ID = f.ID
+                FROM `order` o
+                JOIN flight f ON o.Flight_ID = f.ID
                 WHERE o.Status = 'Active'
             """
             cursor.execute(query)
@@ -663,7 +663,7 @@ def update_active_orders_to_completed() -> int:
                     # Update order if current datetime is strictly after departure datetime
                     if current_datetime > departure_datetime:
                         cursor.execute(
-                            "UPDATE `Order` SET Status = 'Completed' WHERE Order_ID = %s",
+                            "UPDATE `order` SET Status = 'Completed' WHERE Order_ID = %s",
                             (order_id,)
                         )
             
@@ -853,7 +853,7 @@ def create_aircraft_with_seats(manufacturer, size, eco_cap, bus_cap, purchase_da
             for col in bus_cols:
                 if bus_count < bus_cap:
                     cursor.execute("""
-                        INSERT INTO CLASS (Plane_ID, Type, Row_Num, Column_Letter) 
+                        INSERT INTO class (Plane_ID, Type, Row_Num, Column_Letter) 
                         VALUES (%s, %s, %s, %s)
                     """, (plane_id, 'Business', current_row, col))
                     bus_count += 1
@@ -866,7 +866,7 @@ def create_aircraft_with_seats(manufacturer, size, eco_cap, bus_cap, purchase_da
             for col in eco_cols:
                 if eco_count < eco_cap:
                     cursor.execute("""
-                        INSERT INTO CLASS (Plane_ID, Type, Row_Num, Column_Letter) 
+                        INSERT INTO class (Plane_ID, Type, Row_Num, Column_Letter) 
                         VALUES (%s, %s, %s, %s)
                     """, (plane_id, 'Economy', current_row, col))
                     eco_count += 1
@@ -977,7 +977,7 @@ def process_system_cancellation(flight_id):
             # 2. Update order statuses to 'System Cancelation' and reset prices
             print(f"DEBUG: Updating orders status for flight {flight_id}")
             cursor.execute("""
-                UPDATE `Order` 
+                UPDATE `order` 
                 SET Status = 'System Cancelation', Total_Price = 0 
                 WHERE Flight_ID = %s
             """, (flight_id,))
