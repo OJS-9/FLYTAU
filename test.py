@@ -27,7 +27,7 @@ def get_db_connection():
 
 
 with get_db_connection() as cursor:
-    cursor.execute("SELECT * FROM flytau.path")
+    cursor.execute("SELECT * FROM path")
     result = cursor.fetchall()
     print(result)
 
