@@ -7,6 +7,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import io
 import base64
+import os
 
 app = Flask(__name__)
 
@@ -18,11 +19,11 @@ app.config.update(
     SESSION_REFRESH_EACH_REQUEST=True,
     SESSION_COOKIE_SECURE=True,
 )
+
 Session(app)
 
 # Update active orders to completed on app startup
 update_active_orders_to_completed()
-
 
 @app.errorhandler(404)
 def invalid_route(e):
@@ -31,6 +32,15 @@ def invalid_route(e):
 
 @app.route('/', methods=['POST', 'GET'])
 def home():
+    # Check if user is already logged in and redirect to appropriate dashboard
+    user_type = session.get("user_type")
+    if user_type == "customer":
+        return redirect("/user_dashboard")
+    elif user_type == "manager":
+        return redirect("/admin_dashboard")
+    elif user_type == "guest":
+        return redirect("/guest_dashboard")
+    
     if request.method == "POST":
         login_type = request.form.get("login_type")
         if login_type == "guest":
@@ -69,6 +79,7 @@ def login():
 
             mail, first_name, last_name = row
             session.clear()
+            session.permanent = True  # Make session persist across browser restarts
             session["user_type"] = "customer"
             session["user_email"] = mail
             session["user_name"] = f"{first_name} {last_name}"
@@ -94,6 +105,7 @@ def login():
 
         mgr_id, first_name, last_name = row
         session.clear()
+        session.permanent = True  # Make session persist across browser restarts
         session["user_type"] = "manager"
         session["user_id"] = mgr_id
         session["user_name"] = f"{first_name} {last_name}"
@@ -175,6 +187,7 @@ def signup():
             )
 
             session.clear()
+            session.permanent = True  # Make session persist across browser restarts
             session["user_type"] = "customer"
             session["user_email"] = email
             session["user_name"] = f"{first_name} {last_name}"
@@ -200,6 +213,7 @@ def guest_sign_in_route():
                                error="First and Last names must contain English letters only (no spaces or numbers).",
                                last_email=email)
     session.clear()
+    session.permanent = True  # Make session persist across browser restarts
     session["user_type"] = "guest"
     session["guest_email"] = email
     session["guest_first_name"] = f_name
