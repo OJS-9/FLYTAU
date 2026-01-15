@@ -374,13 +374,13 @@ def get_flight_seat_map(flight_id: int):
                 c.Type AS class_type,
                 IF(EXISTS(
                     SELECT 1 
-                    FROM flytau.assigned a
-                    JOIN flytau.`order` o ON a.Order_ID = o.Order_ID 
+                    FROM assigned a
+                    JOIN `order` o ON a.Order_ID = o.Order_ID 
                     WHERE a.Class_ID = c.ID 
                       AND o.Flight_ID = %s
                 ), 1, 0) AS is_occupied
-            FROM flytau.class c
-            JOIN flytau.flight f ON f.Plane_ID = c.Plane_ID
+            FROM class c
+            JOIN flight f ON f.Plane_ID = c.Plane_ID
             WHERE f.ID = %s
             ORDER BY c.Row_Num, c.Column_Letter
         """
