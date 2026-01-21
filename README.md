@@ -1,77 +1,73 @@
-# FLYTAU Flight Management & Ticketing
+# FLYTAU — Flight Board, Ticketing, and Ops Suite
 
-Project overview and runbook for the FLYTAU flight board and ticketing system (Flask + MySQL).
+FLYTAU is a full-stack flight management, ticketing, and reporting system built with Flask and MySQL. It lets guests find seats fast, keeps registered customers on top of their trips, and gives managers a cockpit for routes, crew, aircraft, and revenue insights — all aligned with the academic brief in `הנחיות פרויקט - בסיסי נתונים ומערכות מידע.pdf`.
 
-## Table of Contents
-- Overview
-- Required Functionality
-- Project Structure
-- Setup & Run
-- Environment Variables
-- Typical User Flows
-- Submission Criteria
-- Current Status
+## Why it matters
+- Single experience for guests, registered flyers, and managers — no context switching.
+- Seat-level booking with live availability and upfront pricing.
+- Safety and governance baked in: managers cannot buy tickets, bookings lock 36h pre-departure, cancellations apply a clear 5% fee.
+- Operations toolkit: add aircraft, pilots, attendants, build routes, schedule flights, and monitor occupancy and revenue trends.
 
-## Overview
-- Stack: Python 3, Flask, MySQL (Workbench for schema), `mysql-connector-python`, `python-dotenv`.
-- Goal: end-to-end management of flights, bookings, users, and crew with authentication, booking, cancellation, and reporting.
-- Audiences: guests, registered customers, admins/managers.
+## What’s inside
+- **Multichannel access**
+  - Guests sign in with email/name to search and buy.
+  - Registered customers sign up (email/password, passport, DOB, phones) and get history + cancellation controls.
+  - Managers log in with employee ID/password for administration only.
+- **Flight shopping & booking**
+  - Search by origin, destination, date, and passengers; pagination for future flights.
+  - Seat map selection per cabin; dynamic pricing by class.
+  - Booking summary and confirmation with order ID for later lookup.
+  - Auto-rollover of completed orders on app start to keep statuses fresh.
+- **Policy-aware cancellations**
+  - Full-order cancellation (no partial) allowed up to 36h before departure with a fixed 5% fee; reflects in booking summary.
+  - Role-scoped access so only the booking owner can view/manage their orders.
+- **Manager cockpit**
+  - Flight builder workflow: validate or create paths, pick aircraft by availability, set pricing, assign crew by required ratios, and publish.
+  - Manage orders and cancel flights; view airport inventory and future capacity.
+  - Add aircraft (auto-generate seats/classes), pilots, and stewards with certification rules for long-haul.
+  - Built-in reports (Matplotlib) for employee hours, revenue by plane/class, flight occupancy, and cancellation rates.
+- **Data & visuals**
+  - MySQL schema aligned to the brief (customers, guests, managers, crew, planes, flights, orders, seats).
+  - Seed expectations: ≥2 managers, 2 registered users, 2 guests, 10 pilots, 20 attendants, 6 planes, 4 active flights, 4 bookings; FLYTAU logo included in UI.
+  - No real payment gateway — totals are for revenue tracking only.
 
-## Required Functionality (from brief)
-- **Auth & registration**: user sign-up with personal details; registered user login via email+password; admin login via ID+password.
-- **Search & purchase**: search flights by date/origin/destination; pick seats by availability; no extra passenger details needed when buying 2+ seats in one order.
-- **Bookings management**: view upcoming tickets; cancel an entire booking up to 36 hours before departure with a 5% fee (no partial cancellation); registered users can view purchase history filtered by status (active/completed/customer-cancel/system-cancel).
-- **Manager restrictions**: managers cannot purchase tickets (even as guests).
-- **Flight management**: add flights per the operational process; cancel existing flights.
-- **Reports**: show statistical/management reports.
-- **Seed data required**: at least 2 managers, 2 registered users, 2 guests, 10 pilots, 20 flight attendants, 6 aircraft, 4 active flights, 4 bookings. Include the company logo in the UI.
+## Experience by persona
+- **Guest**: land → quick sign-in → search → seat selection → book → keep order code for display/cancel.
+- **Registered customer**: login → search/book → seat map → confirmation → view history (active/completed/cancel) → cancel per policy.
+- **Manager**: login with ID → add crew/aircraft → build routes and flights → monitor orders → run reports; purchase is blocked.
 
-## Project Structure (current and planned)
-- `test.py` — sample MySQL connection and query.
-- `requirements.txt` — Python deps.
-- `.env` — to be created locally (not committed) for DB credentials.
-- To add: `main.py`, Flask app package (`app/` with blueprints/templates/static), SQL script for schema + seed data.
+## Tech stack
+- Flask + Flask-Session, MySQL (`mysql-connector-python`), Matplotlib for reports, `python-dotenv` for configuration.
+- Templates and static assets served from `templates/` and `static/` (includes the FLYTAU logo).
 
-## Setup & Run
-1) Install deps:
+## Setup & run
+1) Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
-2) Create a `.env` file (see Environment Variables).
-3) Prepare the database:
-   - Run the SQL script to create schema/tables and seed required data (crew, users, flights, bookings).
-4) Run the Flask app (example):
-```bash
-export FLASK_APP=main.py
-export FLASK_ENV=development  # optional
-flask run
-```
-5) Quick checks:
-   - User signup and login.
-   - Search flight, buy ticket, view active booking.
-   - Cancel booking ≥36h before departure with 5% fee.
-   - Admin login, add/cancel flight, view reports; ensure admin cannot purchase.
-
-## Environment Variables (`.env`)
+2) Create `.env` with DB credentials:
 ```
 DB_HOST=your_host
 DB_USER=your_user
 DB_PASSWORD=your_password
 DB_NAME=flytau
+FLASK_SECRET_KEY=replace_me
 ```
-Add more as needed (e.g., `FLASK_SECRET_KEY`, report config, etc.).
+3) Initialize MySQL with the provided schema/seed script (see `Misc/FLYTAU.sql`).
+4) Launch:
+```bash
+export FLASK_APP=main.py
+flask run
+```
+5) Sanity checks: sign up/login, search and book, seat selection, cancel ≥36h with 5% fee, manager login, add a flight/crew/plane, view reports.
 
-## Typical User Flows
-- Guest: search flights → choose flight/seats → finalize booking → receive booking code + email for later display/cancel.
-- Registered user: login → search/book → view history or cancel per policy.
-- Manager: login with ID+password → add crew/flights, cancel flights, view reports; purchasing blocked.
+## Project structure (high level)
+- `main.py` — Flask app, routes for auth, booking, cancellations, admin flows, and reports.
+- `utils.py` — DB access layer (search, orders, seat maps, crew/plane creation, reporting queries).
+- `templates/` — 29 HTML templates for user, guest, and manager journeys.
+- `static/` — shared CSS and the FLYTAU logo.
+- `Misc/FLYTAU.sql` — schema + seed data for required starting records.
+- `requirements.txt` — Python dependencies.
 
-## Submission Criteria (from brief)
-- Features implemented: 70%
-- Code readability & docs: 10%
-- UX/usability: 10%
-- Design/visuals: 10%
-- Submission: `Group_XX.zip` with app code (incl. `main.py`), SQL script, and a text file with deployed site URL + two accounts (regular + manager).
-
-## Current Status
-Repo currently has only a basic MySQL connection sample (`test.py`). Need to add the full Flask app, SQL schema, and seed data per the brief.
+## Alignment with the brief
+All required capabilities — auth, search/purchase, booking management, manager restrictions, flight admin, reporting, seed data, and branding — are implemented per `הנחיות פרויקט - בסיסי נתונים ומערכות מידע.pdf`.
