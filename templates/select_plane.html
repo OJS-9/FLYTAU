@@ -54,6 +54,12 @@
                         <span class="material-icons text-[16px] mr-2">event</span>
                         {{ departure_time }}
                     </span>
+                    {% if path_duration %}
+                    <span class="flex items-center bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
+                        <span class="material-icons text-[16px] mr-2">schedule</span>
+                        {% if path_duration > 6 %}Long Flight{% else %}Short Flight{% endif %}
+                    </span>
+                    {% endif %}
                 </div>
             </div>
 

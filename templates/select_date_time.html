@@ -69,7 +69,7 @@
                         </div>
                         <div class="flex items-center text-gray-400 mt-2 px-1">
                             <span class="material-icons text-xs mr-1">schedule</span>
-                            <span id="current-time-msg" class="text-[11px] font-medium">System date: Jan 14, 2026</span>
+                            <span id="current-time-msg" class="text-[11px] font-medium"></span>
                         </div>
                     </div>
 
@@ -94,6 +94,7 @@
 
     <script>
         const dateInput = document.getElementById('departure_input');
+        const currentTimeMsg = document.getElementById('current-time-msg');
 
         function getNowString() {
             const now = new Date();
@@ -102,8 +103,23 @@
             return now.toISOString().slice(0, 16);
         }
 
+        function updateCurrentTimeMessage() {
+            const now = new Date();
+            const formattedDate = now.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+            const formattedTime = now.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            currentTimeMsg.textContent = `System date: ${formattedDate} • ${formattedTime}`;
+        }
+
 
         dateInput.min = getNowString();
+        updateCurrentTimeMessage();
 
         document.getElementById('scheduleForm').onsubmit = function(e) {
             const selected = dateInput.value;

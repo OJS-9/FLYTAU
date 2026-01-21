@@ -1177,11 +1177,14 @@ def step_2_select_plane():
             return redirect(url_for('manage_flights'))
 
         resources = get_available_resources(origin, dest, departure_time)
+        path_info = get_path_info(origin, dest)
+        path_duration = path_info[0] if path_info else None  # Duration (actual flight time in hours)
 
         return render_template('select_plane.html',
                                origin=origin,
                                dest=dest,
                                departure_time=departure_time,
+                               path_duration=path_duration,
                                planes=resources.get('planes', []))
     except Exception as e:
         print(f"Error in Step 2: {e}")
