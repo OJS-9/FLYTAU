@@ -1,73 +1,160 @@
-# FLYTAU — Flight Board, Ticketing, and Ops Suite
+# ✈️ FLYTAU — Your Complete Flight Management & Booking Platform
 
-FLYTAU is a full-stack flight management, ticketing, and reporting system built with Flask and MySQL. It lets guests find seats fast, keeps registered customers on top of their trips, and gives managers a cockpit for routes, crew, aircraft, and revenue insights — all aligned with the academic brief in `הנחיות פרויקט - בסיסי נתונים ומערכות מידע.pdf`.
+**Transform how you manage flights, serve customers, and grow your airline business.**
 
-## Why it matters
-- Single experience for guests, registered flyers, and managers — no context switching.
-- Seat-level booking with live availability and upfront pricing.
-- Safety and governance baked in: managers cannot buy tickets, bookings lock 36h pre-departure, cancellations apply a clear 5% fee.
-- Operations toolkit: add aircraft, pilots, attendants, build routes, schedule flights, and monitor occupancy and revenue trends.
+FLYTAU is a powerful, all-in-one flight management system that delivers seamless booking experiences for travelers while giving managers complete control over operations, crew, and revenue insights. Built with modern web technologies, it's designed to scale from startup to enterprise—all while keeping your data secure and your workflows intuitive.
 
-## What’s inside
-- **Multichannel access**
-  - Guests sign in with email/name to search and buy.
-  - Registered customers sign up (email/password, passport, DOB, phones) and get history + cancellation controls.
-  - Managers log in with employee ID/password for administration only.
-- **Flight shopping & booking**
-  - Search by origin, destination, date, and passengers; pagination for future flights.
-  - Seat map selection per cabin; dynamic pricing by class.
-  - Booking summary and confirmation with order ID for later lookup.
-  - Auto-rollover of completed orders on app start to keep statuses fresh.
-- **Policy-aware cancellations**
-  - Full-order cancellation (no partial) allowed up to 36h before departure with a fixed 5% fee; reflects in booking summary.
-  - Role-scoped access so only the booking owner can view/manage their orders.
-- **Manager cockpit**
-  - Flight builder workflow: validate or create paths, pick aircraft by availability, set pricing, assign crew by required ratios, and publish.
-  - Manage orders and cancel flights; view airport inventory and future capacity.
-  - Add aircraft (auto-generate seats/classes), pilots, and stewards with certification rules for long-haul.
-  - Built-in reports (Matplotlib) for employee hours, revenue by plane/class, flight occupancy, and cancellation rates.
-- **Data & visuals**
-  - MySQL schema aligned to the brief (customers, guests, managers, crew, planes, flights, orders, seats).
-  - Seed expectations: ≥2 managers, 2 registered users, 2 guests, 10 pilots, 20 attendants, 6 planes, 4 active flights, 4 bookings; FLYTAU logo included in UI.
-  - No real payment gateway — totals are for revenue tracking only.
+---
 
-## Experience by persona
-- **Guest**: land → quick sign-in → search → seat selection → book → keep order code for display/cancel.
-- **Registered customer**: login → search/book → seat map → confirmation → view history (active/completed/cancel) → cancel per policy.
-- **Manager**: login with ID → add crew/aircraft → build routes and flights → monitor orders → run reports; purchase is blocked.
+## 🎯 Why FLYTAU Stands Out
 
-## Tech stack
-- Flask + Flask-Session, MySQL (`mysql-connector-python`), Matplotlib for reports, `python-dotenv` for configuration.
-- Templates and static assets served from `templates/` and `static/` (includes the FLYTAU logo).
+### For Your Customers
+- **Lightning-fast booking** — Guests can search and book in minutes, no account required
+- **Smart seat selection** — Interactive seat maps show real-time availability with instant pricing
+- **Flexible cancellation** — Clear policies: cancel up to 36 hours before departure with a transparent 5% fee
+- **Complete travel history** — Registered users track all their flights in one place, filtered by status
 
-## Setup & run
-1) Install dependencies:
+### For Your Team
+- **One unified platform** — Manage flights, crew, aircraft, and orders from a single dashboard
+- **Intelligent flight builder** — Step-by-step wizard ensures every flight meets safety and capacity requirements
+- **Real-time insights** — Beautiful visual reports reveal revenue trends, occupancy rates, and crew performance
+- **Built-in safeguards** — Managers can't purchase tickets, preventing conflicts of interest automatically
+
+---
+
+## 🚀 What You Get
+
+### **Three User Experiences, One Powerful System**
+
+#### 👤 Guest Experience
+Perfect for one-time travelers. Simply enter your email and name, search flights, pick your seats, and book instantly. Your order code is your ticket to view or cancel anytime.
+
+#### 👥 Registered Customer Experience
+Create an account once, and your details auto-fill for every booking. Access your complete travel history, filter by status (active, completed, cancelled), and manage all your reservations from one dashboard.
+
+#### 👔 Manager Experience
+Your command center for operations. Add aircraft and crew members, build new routes, schedule flights with intelligent resource allocation, monitor bookings, and generate actionable business reports—all while the system prevents you from purchasing tickets.
+
+---
+
+## 💎 Key Features That Make a Difference
+
+### **Intelligent Flight Search & Booking**
+- Search by origin, destination, date, and passenger count
+- Real-time seat availability with visual seat maps
+- Dynamic pricing by class (Economy & Business)
+- Instant booking confirmation with unique order IDs
+- Automatic order status updates (active → completed)
+
+### **Smart Cancellation Management**
+- Full-order cancellation (no partial cancellations)
+- 36-hour cancellation window with clear 5% fee policy
+- Role-based access ensures customers only see their own bookings
+- Transparent cancellation summaries with refund calculations
+
+### **Complete Operations Management**
+- **Aircraft Management**: Add planes with automatic seat generation
+- **Crew Management**: Add pilots and stewards with certification tracking for long-haul flights
+- **Route Builder**: Create new flight paths or use existing ones with timezone support
+- **Flight Scheduling**: Multi-step wizard ensures proper resource allocation (planes, crew, timing)
+- **Order Oversight**: View and manage all bookings with powerful filtering
+
+### **Business Intelligence Dashboard**
+Four comprehensive reports powered by beautiful visualizations:
+- **Employee Flight Hours** — Track crew workload and prevent fatigue
+- **Revenue Analysis** — Break down earnings by plane size, manufacturer, and class
+- **Flight Occupancy** — Identify underperforming routes and optimize capacity
+- **Cancellation Trends** — Monitor cancellation rates by month to spot patterns
+
+---
+
+## 🛠️ Technology Stack
+
+Built with industry-standard tools for reliability and performance:
+
+- **Backend**: Flask (Python) with session management
+- **Database**: MySQL with optimized queries and relationships
+- **Visualizations**: Matplotlib for professional business reports
+- **Architecture**: Clean separation of concerns (routes, utilities, templates)
+
+---
+
+## ⚡ Quick Start Guide
+
+### 1. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
-2) Create `.env` with DB credentials:
-```
+
+### 2. Configure Your Environment
+Create a `.env` file in the project root:
+```env
 DB_HOST=your_host
 DB_USER=your_user
 DB_PASSWORD=your_password
 DB_NAME=flytau
-FLASK_SECRET_KEY=replace_me
+FLASK_SECRET_KEY=your_secret_key_here
 ```
-3) Initialize MySQL with the provided schema/seed script (see `Misc/FLYTAU.sql`).
-4) Launch:
+
+### 3. Initialize Your Database
+Run the provided SQL script (`Misc/FLYTAU.sql`) to create the schema and load seed data:
+- 2 managers, 2 registered users, 2 guests
+- 10 pilots, 20 flight attendants
+- 6 aircraft with full seat configurations
+- 4 active flights, 4 sample bookings
+
+### 4. Launch the Application
 ```bash
 export FLASK_APP=main.py
 flask run
 ```
-5) Sanity checks: sign up/login, search and book, seat selection, cancel ≥36h with 5% fee, manager login, add a flight/crew/plane, view reports.
 
-## Project structure (high level)
-- `main.py` — Flask app, routes for auth, booking, cancellations, admin flows, and reports.
-- `utils.py` — DB access layer (search, orders, seat maps, crew/plane creation, reporting queries).
-- `templates/` — 29 HTML templates for user, guest, and manager journeys.
-- `static/` — shared CSS and the FLYTAU logo.
-- `Misc/FLYTAU.sql` — schema + seed data for required starting records.
-- `requirements.txt` — Python dependencies.
+### 5. Start Exploring
+- **As a Guest**: Visit the homepage → Quick sign-in → Search flights → Book seats
+- **As a Customer**: Sign up → Login → Browse your dashboard → Book or view history
+- **As a Manager**: Login with employee ID → Access admin dashboard → Add resources → Create flights → View reports
 
-## Alignment with the brief
-All required capabilities — auth, search/purchase, booking management, manager restrictions, flight admin, reporting, seed data, and branding — are implemented per `הנחיות פרויקט - בסיסי נתונים ומערכות מידע.pdf`.
+---
+
+## 📁 Project Structure
+
+```
+Code/
+├── main.py              # Flask application with all routes and business logic
+├── utils.py             # Database layer with optimized queries and helpers
+├── templates/           # 29 HTML templates for all user journeys
+├── static/              # CSS styles and FLYTAU branding assets
+├── requirements.txt     # Python dependencies
+└── sessions/            # Session storage directory
+
+Misc/
+└── FLYTAU.sql          # Complete database schema and seed data
+```
+
+---
+
+## ✅ Full Compliance with Project Requirements
+
+This system fully implements all requirements from the academic brief (`הנחיות פרויקט - בסיסי נתונים ומערכות מידע.pdf`):
+
+✓ User authentication and registration  
+✓ Flight search and booking with seat selection  
+✓ Order management and cancellation policies  
+✓ Manager restrictions (no ticket purchases)  
+✓ Complete flight administration workflow  
+✓ Comprehensive management reports  
+✓ Required seed data and branding  
+
+---
+
+## 🎨 Design Philosophy
+
+FLYTAU was built with **user experience first**. Every feature is designed to be:
+- **Intuitive** — No training required, just start using it
+- **Fast** — Optimized queries and efficient workflows
+- **Secure** — Role-based access and data protection built-in
+- **Scalable** — Clean architecture ready for growth
+
+---
+
+**Ready to transform your flight operations?** Get started in minutes and experience the difference a well-designed system makes.
