@@ -28,6 +28,21 @@ def get_db_connection():
             mydb.close()
 
 
+def get_dashboard_redirect(session_obj):
+    """
+    Returns the dashboard redirect URL based on user_type in session.
+    Returns None if user is not logged in.
+    """
+    user_type = session_obj.get("user_type")
+    if user_type == "customer":
+        return "/user_dashboard"
+    elif user_type == "manager":
+        return "/admin_dashboard"
+    elif user_type == "guest":
+        return "/guest_dashboard"
+    return None
+
+
 def get_customer_by_email_and_password(email: str, password: str) -> Optional[Tuple[str, str, str]]:
     """
     Return (Mail, First_Name, Last_Name) for a matching customer, or None.
