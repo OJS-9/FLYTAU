@@ -32,14 +32,13 @@ def invalid_route(e):
 
 @app.route('/', methods=['POST', 'GET'])
 def home():
+
     # Check if user is already logged in and redirect to appropriate dashboard
-    user_type = session.get("user_type")
-    if user_type == "customer":
-        return redirect("/user_dashboard")
-    elif user_type == "manager":
-        return redirect("/admin_dashboard")
-    elif user_type == "guest":
-        return redirect("/guest_dashboard")
+    if request.method == "GET":
+        redirect_url = get_dashboard_redirect(session)
+        if redirect_url:
+            return redirect(redirect_url)
+        return render_template("home.html")
     
     if request.method == "POST":
         login_type = request.form.get("login_type")
@@ -50,78 +49,83 @@ def home():
         if login_type == "signup":
             return redirect("/signup")
         return render_template("login_form.html", error="Please select an option")
-    else:
-         return render_template("home.html")
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+
     if request.method == "GET":
+        redirect_url = get_dashboard_redirect(session)
+        if redirect_url:
+            return redirect(redirect_url)
         return render_template("login.html")
 
-    # POST: handle login
-    username = request.form.get("username", "").strip()
-    password = request.form.get("password", "").strip()
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
 
-    if not username or not password:
-        return render_template("login.html", error="Please enter both username and password.", last_username=username)
+        if not username or not password:
+            return render_template("login.html", error="Please enter both username and password.", last_username=username)
 
-    try:
-        # If username contains '@' -> Customer (Costumer table, Mail + Password)
-        if "@" in username:
-            row = get_customer_by_email_and_password(username, password)
-            if not row:
+        try:
+            # If username contains '@' -> Customer (Costumer table, Mail + Password)
+            if "@" in username:
+                row = get_customer_by_email_and_password(username, password)
+                if not row:
+                    return render_template(
+                        "login.html",
+                        error="Invalid email or password.",
+                        last_username=username,
+                    )
+
+                mail, first_name, last_name = row
+                session.clear()
+                session.permanent = True  # Make session persist across browser restarts
+                session["user_type"] = "customer"
+                session["user_email"] = mail
+                session["user_name"] = f"{first_name} {last_name}"
+                return redirect("/user_dashboard")
+
+            # Otherwise -> Manager (Manager table, ID + Password)
+            try:
+                manager_id = int(username)
+            except ValueError:
                 return render_template(
                     "login.html",
-                    error="Invalid email or password.",
+                    error="Manager username must be a numeric employee ID.",
                     last_username=username,
                 )
 
-            mail, first_name, last_name = row
+            row = get_manager_by_id_and_password(manager_id, password)
+            if not row:
+                return render_template(
+                    "login.html",
+                    error="Invalid manager ID or password.",
+                    last_username=username,
+                )
+
+            mgr_id, first_name, last_name = row
             session.clear()
             session.permanent = True  # Make session persist across browser restarts
-            session["user_type"] = "customer"
-            session["user_email"] = mail
+            session["user_type"] = "manager"
+            session["user_id"] = mgr_id
             session["user_name"] = f"{first_name} {last_name}"
-            return redirect("/user_dashboard")
-
-        # Otherwise -> Manager (Manager table, ID + Password)
-        try:
-            manager_id = int(username)
-        except ValueError:
+            return redirect("/admin_dashboard")
+        except Exception:
+            # In a real app you would log the error server-side
             return render_template(
                 "login.html",
-                error="Manager username must be a numeric employee ID.",
+                error="An unexpected error occurred while logging in. Please try again.",
                 last_username=username,
             )
-
-        row = get_manager_by_id_and_password(manager_id, password)
-        if not row:
-            return render_template(
-                "login.html",
-                error="Invalid manager ID or password.",
-                last_username=username,
-            )
-
-        mgr_id, first_name, last_name = row
-        session.clear()
-        session.permanent = True  # Make session persist across browser restarts
-        session["user_type"] = "manager"
-        session["user_id"] = mgr_id
-        session["user_name"] = f"{first_name} {last_name}"
-        return redirect("/admin_dashboard")
-    except Exception:
-        # In a real app you would log the error server-side
-        return render_template(
-            "login.html",
-            error="An unexpected error occurred while logging in. Please try again.",
-            last_username=username,
-        )
 
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == "GET":
+        redirect_url = get_dashboard_redirect(session)
+        if redirect_url:
+            return redirect(redirect_url)
         return render_template("signup.html")
 
     if request.method == "POST":
@@ -224,7 +228,11 @@ def guest_sign_in_route():
 
 @app.route("/user_dashboard")
 def user_dashboard():
+
     if session.get("user_type") != "customer":
+        redirect_url = get_dashboard_redirect(session)
+        if redirect_url:
+            return redirect(redirect_url)
         return redirect("/login")
     
     # Pagination for list of all future flights with available seats
@@ -258,8 +266,13 @@ def user_dashboard():
 
 @app.route("/admin_dashboard")
 def admin_dashboard():
+    
     if session.get("user_type") != "manager":
+        redirect_url = get_dashboard_redirect(session)
+        if redirect_url:
+            return redirect(redirect_url)
         return redirect("/login")
+    
     airports = get_all_airports()
     return render_template(
         "admin_dashboard.html",
@@ -276,7 +289,10 @@ def guest_dashboard():
     Uses the same guest.html template but passes the guest email.
     """
     if session.get("user_type") != "guest":
-        return redirect("/")
+        redirect_url = get_dashboard_redirect(session)
+        if redirect_url:
+            return redirect(redirect_url)
+        return redirect("/login")
     
     # Pagination for list of all future flights with available seats
     try:
@@ -319,7 +335,10 @@ def search_flights_route():
 
     user_type = session.get("user_type")
     if user_type not in ["customer", "guest"]:
-        return jsonify({"error": "You must be signed in to search flights."}), 401
+        redirect_url = get_dashboard_redirect(session)
+        if redirect_url:
+            return redirect(redirect_url)
+        return redirect("/login")
 
     origin_airport = data.get("origin_airport", "").strip().upper()
     destination_airport = data.get("destination_airport", "").strip().upper()
@@ -391,7 +410,10 @@ def get_future_flights_route():
     # Check if user is logged in as customer or guest
     user_type = session.get("user_type")
     if user_type not in ["customer", "guest"]:
-        return jsonify({"error": "You must be signed in (as guest or customer) to view flights."}), 401
+            redirect_url = get_dashboard_redirect(session)
+            if redirect_url:
+                return redirect(redirect_url)
+            return redirect("/login")
 
     # Get page parameter, default to 1
     try:
@@ -416,6 +438,12 @@ def manage_reservations():
     Search and retrieve flight reservation details for both Guests and Customers.
     Redirects to specific dashboards or renders detailed views based on user type.
     """
+    if session.get("user_type") not in ["customer", "guest"]:
+        redirect_url = get_dashboard_redirect(session)
+        if redirect_url:
+            return redirect(redirect_url)
+        return redirect("/login")
+        
     order_id = request.args.get('order_id')
     user_email = session.get('user_email')
     guest_email = session.get('guest_email')
@@ -455,6 +483,7 @@ def manage_reservations():
                                ticket=ticket,
                                show_manage=True,
                                airports=airports)
+    
 
 @app.route("/cancel_order", methods=["POST"])
 def cancel_order_route():
@@ -484,7 +513,7 @@ def cancel_order_route():
 @app.route("/select_seat")
 def select_seat():
     fid_raw = request.args.get('flight_id')
-    if not fid_raw:
+    if not fid_raw or not session.get("user_type") in ["customer", "guest"]:
         return redirect('/')
 
     flight_id = int(fid_raw)  # המרה קריטית!
@@ -620,6 +649,10 @@ def manage_flights():
 
 @app.route('/manage_orders')
 def manage_orders_page():
+
+    if session.get("user_type") != "manager":
+        return redirect("/login")
+
     origin_q = request.args.get('origin', '').strip()
     dest_q = request.args.get('destination', '').strip()
     date_q = request.args.get('departure_date', '').strip()
@@ -667,13 +700,16 @@ def manage_orders_page():
 
 @app.route('/view_reports')
 def view_reports():
+
     if session.get("user_type") != "manager":
         return redirect("/login")
+
     return render_template("reports_menu.html")
 
 
 @app.route('/reports/employee_hours')
 def report_employee_hours():
+
     if session.get("user_type") != "manager":
         return redirect("/login")
 
@@ -723,6 +759,7 @@ def report_employee_hours():
 
 @app.route('/reports/total_revenue')
 def report_total_revenue():
+
     if session.get("user_type") != "manager":
         return redirect("/login")
 
@@ -794,6 +831,7 @@ def report_total_revenue():
 
 @app.route('/reports/flight_occupancy')
 def report_flight_occupancy():
+
     if session.get("user_type") != "manager":
         return redirect("/login")
 
@@ -852,6 +890,7 @@ def report_flight_occupancy():
 
 @app.route('/reports/cancellation_rate')
 def report_cancellation_rate():
+
     if session.get("user_type") != "manager":
         return redirect("/login")
 
@@ -901,15 +940,27 @@ def report_cancellation_rate():
 
 @app.route('/add_plane')
 def add_plane():
+    
+    if session.get("user_type") != "manager":
+        return redirect("/login")
+
     return render_template('add_plane.html')
 
 
 @app.route('/add_pilot')
 def add_pilot_page():
+
+    if session.get("user_type") != "manager":
+        return redirect("/login")
+
     return render_template('add_pilot.html')
 
 @app.route('/add_steward')
 def add_steward():
+
+    if session.get("user_type") != "manager":
+        return redirect("/login")
+        
     return render_template('add_steward.html')
 
 @app.route('/save_pilot', methods=['POST'])
@@ -997,6 +1048,10 @@ def validate_route():
 
 @app.route('/admin/create-new-path-manual')
 def create_new_path_manual():
+    
+    if session.get("user_type") != "manager":
+        return redirect("/login")
+
     return render_template('create_new_path.html', origin='', dest='')
 
 @app.route('/save_path_and_continue', methods=['POST'])
