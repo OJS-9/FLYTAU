@@ -27,12 +27,20 @@ update_active_orders_to_completed()
 
 @app.errorhandler(404)
 def invalid_route(e):
+    """
+    Error handler for 404 (not found) routes.
+    Redirects all invalid routes to the home page.
+    """
     return redirect("/")
 
 
 @app.route('/', methods=['POST', 'GET'])
 def home():
-
+    """
+    Main entry point for the application.
+    GET: Renders home page or redirects logged-in users to their dashboard.
+    POST: Routes to guest login, customer login, or signup based on user selection.
+    """
     # Check if user is already logged in and redirect to appropriate dashboard
     if request.method == "GET":
         redirect_url = get_dashboard_redirect(session)
@@ -53,7 +61,11 @@ def home():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-
+    """
+    Handles user authentication.
+    GET: Renders login page or redirects if already logged in.
+    POST: Authenticates customers (by email) or managers (by numeric ID), sets session, and redirects to appropriate dashboard.
+    """
     if request.method == "GET":
         redirect_url = get_dashboard_redirect(session)
         if redirect_url:
@@ -122,6 +134,11 @@ def login():
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
+    """
+    Handles new customer registration.
+    GET: Renders signup form or redirects if already logged in.
+    POST: Validates form data, checks for duplicate emails, creates customer account with phone numbers, and logs them in.
+    """
     if request.method == "GET":
         redirect_url = get_dashboard_redirect(session)
         if redirect_url:
@@ -207,6 +224,10 @@ def signup():
 
 @app.route("/guest_sign_in", methods=["POST"])
 def guest_sign_in_route():
+    """
+    Handles guest user sign-in (no password required).
+    Validates name format (English letters only), stores guest info in session, redirects to guest dashboard.
+    """
     email = request.form.get("email", "").strip()
     f_name = request.form.get("first_name", "").strip()
     l_name = request.form.get("last_name", "").strip()
@@ -228,7 +249,10 @@ def guest_sign_in_route():
 
 @app.route("/user_dashboard")
 def user_dashboard():
-
+    """
+    Main dashboard for registered customers.
+    Displays paginated future flights, order history, and airport list. Requires customer authentication.
+    """
     if session.get("user_type") != "customer":
         redirect_url = get_dashboard_redirect(session)
         if redirect_url:
@@ -266,7 +290,10 @@ def user_dashboard():
 
 @app.route("/admin_dashboard")
 def admin_dashboard():
-    
+    """
+    Main dashboard for managers.
+    Displays airport list and management options. Requires manager authentication.
+    """
     if session.get("user_type") != "manager":
         redirect_url = get_dashboard_redirect(session)
         if redirect_url:
@@ -316,6 +343,10 @@ def guest_dashboard():
 
 @app.route("/logout")
 def logout():
+    """
+    Ends user session.
+    Clears session data and redirects to home page.
+    """
     session.clear()
     return redirect("/")
 
@@ -487,6 +518,10 @@ def manage_reservations():
 
 @app.route("/cancel_order", methods=["POST"])
 def cancel_order_route():
+    """
+    Handles order cancellation requests.
+    Validates cancellation eligibility (36-hour rule), applies 5% penalty fee, frees up seats, updates order status.
+    """
     order_id = request.form.get("order_id")
     user_type = session.get("user_type")
     email = session.get("guest_email") if user_type == "guest" else session.get("user_email")
@@ -512,6 +547,10 @@ def cancel_order_route():
 
 @app.route("/select_seat")
 def select_seat():
+    """
+    Displays seat selection interface for a flight.
+    Fetches seat map for specified flight, shows available/occupied seats, limits selection based on passenger count.
+    """
     fid_raw = request.args.get('flight_id')
     if not fid_raw or not session.get("user_type") in ["customer", "guest"]:
         return redirect('/')
@@ -638,6 +677,10 @@ def finalize_booking():
 
 @app.route("/manage_flights")
 def manage_flights():
+    """
+    Entry point for flight creation workflow.
+    Renders flight management page with airport list. Requires manager authentication.
+    """
     if session.get("user_type") != "manager":
         return redirect("/login")
 
@@ -649,7 +692,10 @@ def manage_flights():
 
 @app.route('/manage_orders')
 def manage_orders_page():
-
+    """
+    Displays orders for manager review.
+    Filters flights with orders by origin, destination, and date. Shows active flights with bookings.
+    """
     if session.get("user_type") != "manager":
         return redirect("/login")
 
@@ -700,7 +746,10 @@ def manage_orders_page():
 
 @app.route('/view_reports')
 def view_reports():
-
+    """
+    Displays reports menu.
+    Shows available reports. Requires manager authentication.
+    """
     if session.get("user_type") != "manager":
         return redirect("/login")
 
@@ -709,7 +758,10 @@ def view_reports():
 
 @app.route('/reports/employee_hours')
 def report_employee_hours():
-
+    """
+    Generates employee flight hours report.
+    Fetches data, creates stacked bar chart showing short vs long flight hours per employee, displays with summary.
+    """
     if session.get("user_type") != "manager":
         return redirect("/login")
 
@@ -759,7 +811,10 @@ def report_employee_hours():
 
 @app.route('/reports/total_revenue')
 def report_total_revenue():
-
+    """
+    Generates revenue analysis report.
+    Aggregates revenue by plane size, manufacturer, and class type, creates bar chart with color coding.
+    """
     if session.get("user_type") != "manager":
         return redirect("/login")
 
@@ -831,7 +886,10 @@ def report_total_revenue():
 
 @app.route('/reports/flight_occupancy')
 def report_flight_occupancy():
-
+    """
+    Generates flight occupancy report.
+    Analyzes last 10 completed flights, calculates occupancy percentages, creates bar chart with 100% reference line.
+    """
     if session.get("user_type") != "manager":
         return redirect("/login")
 
@@ -890,7 +948,10 @@ def report_flight_occupancy():
 
 @app.route('/reports/cancellation_rate')
 def report_cancellation_rate():
-
+    """
+    Generates monthly cancellation rate report.
+    Calculates customer cancellation percentages by month, creates bar chart showing trends.
+    """
     if session.get("user_type") != "manager":
         return redirect("/login")
 
@@ -940,7 +1001,10 @@ def report_cancellation_rate():
 
 @app.route('/add_plane')
 def add_plane():
-    
+    """
+    Renders form for adding new aircraft.
+    Shows aircraft registration form. Requires manager authentication.
+    """
     if session.get("user_type") != "manager":
         return redirect("/login")
 
@@ -949,7 +1013,10 @@ def add_plane():
 
 @app.route('/add_pilot')
 def add_pilot_page():
-
+    """
+    Renders form for adding new pilot.
+    Shows pilot registration form. Requires manager authentication.
+    """
     if session.get("user_type") != "manager":
         return redirect("/login")
 
@@ -957,7 +1024,10 @@ def add_pilot_page():
 
 @app.route('/add_steward')
 def add_steward():
-
+    """
+    Renders form for adding new steward.
+    Shows steward registration form. Requires manager authentication.
+    """
     if session.get("user_type") != "manager":
         return redirect("/login")
         
@@ -965,6 +1035,10 @@ def add_steward():
 
 @app.route('/save_pilot', methods=['POST'])
 def save_pilot_route():
+    """
+    Saves new pilot to database.
+    Creates pilot record with provided information, shows success confirmation.
+    """
     try:
         pilot_id = add_crew_member(request.form, 'pilot')
         return render_template('crew_success.html',
@@ -977,6 +1051,10 @@ def save_pilot_route():
 
 @app.route('/save_steward', methods=['POST'])
 def save_steward_route():
+    """
+    Saves new steward to database.
+    Creates steward record with provided information, shows success confirmation.
+    """
     try:
         steward_id = add_crew_member(request.form, 'steward')
         return render_template('crew_success.html',
@@ -989,6 +1067,10 @@ def save_steward_route():
 
 @app.route('/save_plane', methods=['POST'])
 def save_plane_route():
+    """
+    Saves new aircraft to database.
+    Validates data, enforces business rule (small planes have no business class), creates plane and seat records, shows success page.
+    """
     try:
         manufacturer = request.form.get('manufacturer')
         size = request.form.get('size')
@@ -1025,6 +1107,10 @@ def save_plane_route():
 
 @app.route('/validate_route', methods=['POST'])
 def validate_route():
+    """
+    Validates origin/destination pair for flight creation.
+    Checks if route exists in database, redirects to date/time selection or path creation accordingly.
+    """
     origin = request.form.get('origin', '').upper()
     dest = request.form.get('dest', '').upper()
 
@@ -1048,7 +1134,10 @@ def validate_route():
 
 @app.route('/admin/create-new-path-manual')
 def create_new_path_manual():
-    
+    """
+    Renders form for manually creating a new flight path.
+    Shows path creation form. Requires manager authentication.
+    """
     if session.get("user_type") != "manager":
         return redirect("/login")
 
@@ -1056,7 +1145,10 @@ def create_new_path_manual():
 
 @app.route('/save_path_and_continue', methods=['POST'])
 def save_path_and_continue():
-
+    """
+    Saves new flight path and continues to flight creation.
+    Creates path record in database, then redirects to date/time selection.
+    """
     origin = request.form.get('origin').upper()
     dest = request.form.get('dest').upper()
     duration = float(request.form.get('duration'))
@@ -1071,6 +1163,10 @@ def save_path_and_continue():
 
 @app.route('/get_available_resources', methods=['POST'])
 def step_2_select_plane():
+    """
+    Step 2 of flight creation - select available plane.
+    Fetches available planes based on route and departure time, renders plane selection page.
+    """
     try:
         origin = request.form.get('origin')
         dest = request.form.get('dest')
@@ -1107,6 +1203,10 @@ def step_2_5_set_pricing():
 
 @app.route('/get_available_crew', methods=['POST'])
 def step_3_select_crew():
+    """
+    Step 3 of flight creation - assign crew members.
+    Determines required crew count based on plane size, fetches available pilots/stewards, renders crew assignment page.
+    """
     try:
         origin = request.form.get('origin')
         dest = request.form.get('dest')
@@ -1142,6 +1242,10 @@ def step_3_select_crew():
 
 @app.route('/finalize_flight_creation', methods=['POST'])
 def finalize_flight_creation():
+    """
+    Final step - creates the flight record.
+    Validates crew count, creates flight record, assigns pilots and stewards, returns flight summary.
+    """
     try:
         origin = request.form.get('origin')
         dest = request.form.get('dest')
@@ -1215,6 +1319,10 @@ def finalize_flight_creation():
 
 @app.route('/reports/aircraft_activity')
 def report_aircraft_activity():
+    """
+    Generates aircraft activity and utilization report.
+    Shows flights performed and utilization rate per aircraft over last 30 days, displays dominant routes, creates dual-axis chart.
+    """
     if session.get("user_type") != "manager":
         return redirect("/login")
 
@@ -1274,6 +1382,10 @@ def report_aircraft_activity():
 
 @app.route('/confirm_cancelation', methods=['POST'])
 def confirm_cancelation_route():
+    """
+    Handles system/manager flight cancellation.
+    Cancels flight, updates all related orders to "System Cancelation", removes crew assignments, shows cancellation summary.
+    """
     f_id = request.form.get('flight_id')
 
     with get_db_connection() as cursor:

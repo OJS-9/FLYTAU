@@ -9,6 +9,10 @@ load_dotenv()
 
 @contextmanager
 def get_db_connection():
+    """
+    Context manager for database connections.
+    Creates MySQL connection using environment variables, yields cursor, automatically closes connection and cursor on exit.
+    """
     mydb = None
     cursor = None
     try:
@@ -108,6 +112,10 @@ def create_customer_with_phones(
 
 
 def guest_sign_in(email: str, first_name: str, last_name: str, phones: list) -> None:
+    """
+    Creates or updates guest record in database.
+    Inserts new guest or updates existing one, adds/updates phone numbers.
+    """
     with get_db_connection() as cursor:
         cursor.execute("SELECT Mail FROM guest WHERE Mail = %s", (email,))
         if not cursor.fetchone():
@@ -380,6 +388,10 @@ def delete_ticket(order_id: int, email: str):
             return False, "An internal error occurred."
 
 def get_flight_seat_map(flight_id: int):
+    """
+    Retrieves seat map for a flight showing availability.
+    Returns list of seat dictionaries with position, class type, and occupied status.
+    """
     with get_db_connection() as cursor:
         query = """
             SELECT 
@@ -833,11 +845,19 @@ def create_path(origin, dest, duration, origin_tz, dest_tz):
         return True
 
 def get_path_info(origin, dest):
+    """
+    Retrieves path information (duration and clock duration).
+    Returns tuple of (Duration, Clock_Duration) or None if path doesn't exist.
+    """
     with get_db_connection() as cursor:
         cursor.execute("SELECT Duration, Clock_Duration FROM path WHERE Origin_Airport = %s AND Dest_Airport = %s", (origin, dest))
         return cursor.fetchone()
 
 def add_new_path(origin, dest, duration, o_tz, d_tz):
+    """
+    Inserts new path without checking for duplicates.
+    Similar to create_path but doesn't check for existing paths first.
+    """
     with get_db_connection() as cursor:
         query = """
             INSERT INTO path (Origin_Airport, Dest_Airport, Duration, Origin_Timezone, Dest_Timezone)
@@ -932,6 +952,10 @@ def add_crew_member(data, role):
 
 
 def get_aircraft_activity_report():
+    """
+    Analyzes aircraft utilization and activity over last 30 days.
+    Returns list of dictionaries with plane info, flight counts, cancellation counts, utilization percentage, and dominant route.
+    """
     with get_db_connection() as cursor:
         query = """
         WITH PlaneRoutes AS (
@@ -1016,7 +1040,11 @@ def process_system_cancellation(flight_id):
             return False
 
 def get_all_airports():
-    """שליפת שדות תעופה לפי מיקום הטור כדי לעקוף שמות עם רווחים"""
+    """
+    Retrieves list of all airports from path table.
+    Extracts unique origin and destination airports, returns sorted list.
+    Uses positional indexing to handle column names with spaces.
+    """
     with get_db_connection() as cursor:
         try:
             # אנחנו שולפים את הכל מהטבלה
