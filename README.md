@@ -69,5 +69,3 @@ flask run
 - `Misc/FLYTAU.sql` — schema + seed data for required starting records.
 - `requirements.txt` — Python dependencies.
 
-## Alignment with the brief
-All required capabilities — auth, search/purchase, booking management, manager restrictions, flight admin, reporting, seed data, and branding — are implemented per `הנחיות פרויקט - בסיסי נתונים ומערכות מידע.pdf`.
